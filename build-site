@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+# -*- mode: python -*-
+
+'''
+Creates the Gyoko Shoujo site from the images and the directory structure
+in the content directory. The site is then committed to the gh-pages
+branch.
+
+The content directory structure provides the primary input through the use
+of images and optional markdown files. Here is an example set of
+content:
+
+    content/
+        index.md
+        toc.md
+        1 - The First Chapter/
+            1 - The page title.png
+            1 - The page title.md
+            2.png
+            3 - A new page title.png
+        2 - Chapter the Second/
+            1.png
+            2.png
+            3.png
+            3.md
+    blog/
+        Article Title.md
+        Another Article.md
+    static/
+        header.png
+        footer.png
+
+This would output a site that looks like this:
+
+    index.html
+    toc.html
+    the-first-chapter/
+        page-1.html
+        page-2.html
+        page-3.html
+    chapter-the-second/
+        page-1.html
+        page-2.html
+        page-3.html
+    blog/
+        index.html
+        article-title.html
+        another-article.html
+
+The html is generated from templates in the template directory. The following
+templates are used:
+
+content.jinja:    Generic template for markdown files in the content directory.
+<name>.jinja:     Page-specific template for a file in the content directory.
+                  In this examples, "index.jinja" could be used for index.md.
+toc.jinja:        Renders the table of contents.
+chapter.jinja:    Renders thumbnails of a chapter's pages.
+page.jinja:       Renders a page (one image) from a chapter.
+blog-index.jinja: Renders the blog index.
+glog-page.jinja:  Renders a single article for the blog.
+
+Images, CSS files and the like belong in the static directory and will be
+copied directly to the output's static directory.
+'''
+import argparse
+import sys
+import tempfile
+
+import gyoko
+
+DEFAULT_BRANCH='gh-pages'
+DEFAULT_REMOTE='origin'
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Builds the Gyoko Shoujo web site, commits the changes '
+        '(to the {0} branch by default), and pushes the branch (to {1} '
+        'by default).'.format(DEFAULT_BRANCH, DEFAULT_REMOTE))
+    parser.add_argument('--branch', dest='branch', type=str, nargs='?',
+                        default=DEFAULT_BRANCH, help='git branch to commit to')
+    parser.add_argument('--remote', dest='remote', type=str, nargs='?',
+                        default=DEFAULT_REMOTE, help='git remote to push to')
+    parser.add_argument('--no-commit', dest='commit', action='store_const',
+                        const=False, default=True,
+                        help="don't commit the changes (implies no-push)")
+    parser.add_argument('--no-push', dest='push', action='store_const',
+                        const=False, default=True,
+                        help="don't push the changes")
+    parser.add_argument('--verbose', '-v', dest='verbosity', type=int,
+                        default=0, choices=[0,1,2], help='how verbose to be')
+
+    args = parser.parse_args()
+    if args.commit is False:
+        args.push = False
+    return args
+
+
+if __name__=='__main__':
+    args = parse_args()
+
+    with tempfile.TemporaryDirectory('gyoko') as build_dir:
+        try:
+            gyoko.set_working_dir(build_dir)
+            if gyoko.checkout_site(args.branch):
+                gyoko.gen_site()
+                if args.commit:
+                    gyoko.commit_site():
+                if args.push:
+                    gyoko.push_site(args.remote):
+        except GyokoException as e:
+            # This already would have everything necessary logged, so
+            # we can just terminate.
+            exit(3)
+        except Exception as e:
+            if args.verbosity == 0:
+                print('An unkown error occured: {0}'.format(e.args[0]),
+                      file=sys.stderr)
+            else:
+                import traceback
+                traceback.print_exc()
+            exit(3)
+
+    exit(0)
