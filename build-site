@@ -63,6 +63,7 @@ Images, CSS files and the like belong in the static directory and will be
 copied directly to the output's static directory.
 '''
 import argparse
+import pathlib
 import sys
 import tempfile
 
@@ -85,6 +86,9 @@ def parse_args():
                         default=DEFAULT_REMOTE, help='git remote to push to')
     parser.add_argument('--repo', dest='repo', type=str, nargs='?',
                         default=DEFAULT_REPO, help='git repo to work on')
+    parser.add_argument('--source', dest='source', type=str, nargs='?',
+                        default=pathlib.Path(__file__).parent.resolve(),
+                        help='source directory for site')
     parser.add_argument('--no-commit', dest='commit', action='store_const',
                         const=False, default=True,
                         help="don't commit the changes (implies no-push)")
@@ -108,11 +112,11 @@ if __name__=='__main__':
         try:
             gyoko.set_working_dir(build_dir)
             gyoko.checkout_site(args.repo, args.branch)
-            gyoko.gen_site()
+            gyoko.gen_site(args.source)
             if args.commit:
                 gyoko.commit_site()
             if args.push:
-                gyoko.push_site(args.remote)
+                gyoko.push_site(args.remote, args.branch)
         except gyoko.GyokoException as e:
             # This already would have everything necessary logged, so
             # we can just terminate.
