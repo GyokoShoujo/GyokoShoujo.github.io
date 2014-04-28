@@ -1,21 +1,25 @@
 
-def log(msg, *args, **kwargs):
-    print(msg.format(*args, **kwargs))
+verbosity = 0
 
 
-def no_log(msg, *args, **kwargs):
-    pass
+def set_log_verbosity(v):
+    '''
+    Sets the logging verbosity: 0 <= verbosity <= 2
+        Verbosity 0: only calls to message are displayed
+        Verbosity 1: message and info calls are displayed
+        Verbosity 2: message, info, and debug calls are displayed
+    '''
+    global verbosity
+    verbosity = v
 
 
-loggers = [(log, no_log, no_log), (log, log, no_log), (log, log, log), ]
+def _make_logger(allowed_verbosity):
+    def logger(msg, *args, **kwargs):
+        if verbosity >= allowed_verbosity:
+            print(msg.format(*args, **kwargs))
+    return logger
 
-message, info, debug = loggers[0]
 
-
-def set_log_verbosity(verbosity):
-    ''' Sets the logging verbosity: 0 <= verbosity <= 2
-    Verbosity 0: only calls to message are displayed
-    Verbosity 1: message and info calls are displayed
-    Verbosity 2: message, info, and debug calls are displayed'''
-    global message, info, debug
-    message, info, debug = loggers[verbosity]
+message = _make_logger(0)
+info = _make_logger(1)
+debug = _make_logger(2)
