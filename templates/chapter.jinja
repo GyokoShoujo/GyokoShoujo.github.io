@@ -1,0 +1,14 @@
+{% extends "base.jinja" %}
+
+{% block body %}
+  {% for page_num in range(page_count) %}
+    <div class="chapter-thumbnails chapter-thumbnails-{% if page_num % 2 == 0 %}even{% else %}odd{% endif %}">
+      <a href="{{ url_base }}/{{ file_base }}-{{ page_num }}.html">
+        <img src="{{ url_base }}/{{ thumbnail_base }}-{{ page_num }}.png" />
+      </a>
+    </div>
+  {% endfor %}
+  <div class="main-content">
+  {{ content_markdown }}
+  </div>
+{% endblock %}
