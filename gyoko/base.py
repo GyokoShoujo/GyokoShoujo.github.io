@@ -43,6 +43,7 @@ def git(command, *args):
         raise GyokoException()
     if stdout:
         debug(stdout)
+    return stdout, stderr
 
 
 def checkout_site(repo, branch):
@@ -77,6 +78,6 @@ def did_site_change():
     '''
     Tests whether there are any changes that need to be committed.
     '''
-    _, stdout, _ = git('status', '--porcelain')
+    stdout, _ = git('status', '--porcelain')
     # There will be nothing in stdout if there is nothing to commit.
     return bool(stdout)
