@@ -35,10 +35,12 @@ This would output a site that looks like this:
     index.html
     toc.html
     the-first-chapter/
+        index.html
         page-1.html
         page-2.html
         page-3.html
     chapter-the-second/
+        index.html
         page-1.html
         page-2.html
         page-3.html
@@ -46,6 +48,25 @@ This would output a site that looks like this:
         index.html
         article-title.html
         another-article.html
+    static/
+        the-first-chapter/
+            page-images/
+                page-1.png
+                page-2.png
+                page-3.png
+            page-thumbnails/
+                page-1.png
+                page-2.png
+                page-3.png
+        chapter-the-second
+            page-images/
+                page-1.png
+                page-2.png
+                page-3.png
+            page-thumbnails/
+                page-1.png
+                page-2.png
+                page-3.png
 
 The html is generated from templates in the template directory. The following
 templates are used:
