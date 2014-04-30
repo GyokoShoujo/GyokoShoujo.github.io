@@ -113,10 +113,10 @@ if __name__=='__main__':
             gyoko.set_working_dir(build_dir)
             gyoko.checkout_site(args.repo, args.branch)
             gyoko.gen_site(args.source)
-            if args.commit:
+            if args.commit and gyoko.did_site_change():
                 gyoko.commit_site()
-            if args.push:
-                gyoko.push_site(args.remote, args.branch)
+                if args.push:
+                    gyoko.push_site(args.remote, args.branch)
         except gyoko.GyokoException as e:
             # This already would have everything necessary logged, so
             # we can just terminate.

@@ -71,3 +71,12 @@ def push_site(remote, branch):
     debug('pushing site in {0} to {1} {2}',
           working_dir, remote, branch)
     git('push', '--quiet', remote, branch)
+
+
+def did_site_change():
+    '''
+    Tests whether there are any changes that need to be committed.
+    '''
+    _, stdout, _ = git('status', '--porcelain')
+    # There will be nothing in stdout if there is nothing to commit.
+    return bool(stdout)
