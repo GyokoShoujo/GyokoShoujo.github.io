@@ -1,5 +1,6 @@
 
 import datetime
+import pathlib
 import subprocess
 
 from .exceptions import GyokoException
@@ -52,6 +53,19 @@ def checkout_site(repo, branch):
     '''
     debug('checking out {0} to {1}', branch, working_dir)
     git('clone', '--quiet', '--depth', 5, '--branch', branch, repo, '.')
+    output = pathlib.Path(working_dir)
+
+    def rm_tree(d):
+        keepers = ('.git',)
+        for item in d.iterdir():
+            if item.name in keepers:
+                continue
+            if item.is_dir():
+                rm_tree(item)
+                item.rmdir()
+            else:
+                item.unlink()
+    rm_tree(output)
 
 
 def commit_site():
