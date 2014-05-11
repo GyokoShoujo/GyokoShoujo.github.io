@@ -31,7 +31,11 @@ def gen_site(source_dir):
     global env
     env = Environment(loader=TemplateLoader(str(tmpl_dir.resolve())))
 
-    # TODO: copy static files to destination
+    # Copy static files
+    static_source = source / 'static'
+    static_dest = dest / 'static'
+    info("Copying static files from {0} to {1}", static_source, static_dest)
+    shutil.copytree(str(static_source.resolve()), str(static_dest))
     gen_dir_from_markdown(content_dir, dest, ignore_set={'index', 'toc', })
     gen_images_dirs(content_dir, dest)
 
