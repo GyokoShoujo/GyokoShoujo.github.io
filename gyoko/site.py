@@ -46,7 +46,7 @@ def gen_site(source_dir):
     shutil.copytree(str(static_source.resolve()), str(static_dest))
     gen_dir_from_markdown(content_dir, dest, ignore_set={'index', 'toc', })
     gen_chapters(chapters, dest)
-    # TODO: Make the core index.
+    gen_index(chapters, source, dest)
 
     # TODO: generate the blog
     # gen_dir_from_markdown(source / "blog", dest, generic_tmpl_name='blog.jinja',
@@ -96,6 +96,18 @@ def build_chapters(source):
 
     chapters.sort(key=lambda c: c.number)
     return chapters
+
+
+def gen_index(chapters, source, output):
+    '''
+    Creates the book's primary index page, which is a list of all
+    chapters.
+    '''
+    context = {
+        'page_title': 'Gyoko Shoujo',
+        'chapters': chapters,
+    }
+    gen_html('index', output, source / 'index.md', extra_context=context)
 
 
 def gen_chapters(chapters, output):

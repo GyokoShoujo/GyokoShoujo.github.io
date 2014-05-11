@@ -1,0 +1,14 @@
+{% extends "base.jinja" %}
+
+{% block body %}
+  <h1>Gyoko Shoujo</h1>
+  <div class="main-content">
+  {{ content_markdown }}
+  </div>
+  <ul class="chapter-links">
+  {% for chapter in chapters %}
+    <li class="chapter-link">
+      <a href="/{{ chapter.slug }}/index.html">{{ chapter.title }}</a>
+    </li>
+  {% endfor %}
+{% endblock %}
