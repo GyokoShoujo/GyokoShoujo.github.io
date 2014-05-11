@@ -1,10 +1,10 @@
 {% extends "base.jinja" %}
 
 {% block body %}
-  {% for page_num in range(page_count) %}
-    <div class="chapter-thumbnails chapter-thumbnails-{% if page_num % 2 == 0 %}even{% else %}odd{% endif %}">
-      <a href="{{ page_base }}/{{ file_base }}-{{ page_num }}.html">
-        <img src="{{ thumbnail_base }}/{{ file_base }}-{{ page_num }}.png" />
+  {% for page in chapter.pages %}
+    <div class="chapter-thumbnails chapter-thumbnails-{{ loop.cycle('even', 'odd' }}">
+      <a href="//{{ chapter.slug }}/{{ file_base }}-{{ page.number }}.html">
+        <img src="{{ thumbnail_base }}/{{ file_base }}-{{ page.number }}.png" />
       </a>
     </div>
   {% endfor %}
