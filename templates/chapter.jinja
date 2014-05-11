@@ -2,8 +2,8 @@
 
 {% block body %}
   {% for page in chapter.pages %}
-    <div class="chapter-thumbnails chapter-thumbnails-{{ loop.cycle('even', 'odd' }}">
-      <a href="//{{ chapter.slug }}/{{ file_base }}-{{ page.number }}.html">
+    <div class="chapter-thumbnails chapter-thumbnails-{{ loop.cycle('even', 'odd') }}">
+      <a href="/{{ chapter.slug }}/{{ file_base }}-{{ page.number }}.html">
         <img src="{{ thumbnail_base }}/{{ file_base }}-{{ page.number }}.png" />
       </a>
     </div>

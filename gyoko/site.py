@@ -125,8 +125,8 @@ def gen_chapters(chapters, output):
         for dir in (html_dir, img_dir, thumbnail_dir):
             dir.mkdir(parents=True)
 
-        img_base = '//static/' + chapter.slug + '/page-images'
-        thumb_base = '//static/' + chapter.slug + '/page-thumbnails'
+        img_base = '/static/' + chapter.slug + '/page-images'
+        thumb_base = '/static/' + chapter.slug + '/page-thumbnails'
         for page_idx, page in enumerate(chapter.pages):
             page_base = 'page-{0}'.format(page.number)
             img_name = page_base + '.png'
@@ -134,14 +134,15 @@ def gen_chapters(chapters, output):
             img_dest = img_dir / img_name
             shutil.copy2(str(page.source.resolve()), str(img_dest))
             make_thumbnail(page.source, thumbnail)
-            page_url = '//{0}/{1}.html'.format(chapter.slug, page_base)
+            page_url = '/{0}/{1}.html'.format(chapter.slug, page_base)
 
-            next_page = None
-            if page_idx < len(chapter.pages):
-                next_page = '//{0}/page-{1}.html'.format(chapter.slug, page_idx+1)
-            elif (chapter_idx < len(chapters) and
+            if page_idx < len(chapter.pages) - 1:
+                next_page = '/{0}/page-{1}.html'.format(chapter.slug, page.number+1)
+            elif (chapter_idx + 1 < len(chapters) and
                   len(chapters[chapter_idx+1].pages) > 0):
-                next_page = '//{0}/page-0.html'.format(chapters[chapter_idx+1].slug)
+                next_page = '/{0}/page-1.html'.format(chapters[chapter_idx+1].slug)
+            else:
+                next_page = None
             context = {
                 'page': page,
                 'page_title': page.title,
@@ -154,7 +155,7 @@ def gen_chapters(chapters, output):
                 'page_count': page_count,
             }
             gen_html(page_base, html_dir, page.markdown_file,
-                     generic_tmpl_name='page', extra_context=context)
+                     template_name='page', extra_context=context)
             prev_url = page_url
             page_num += 1
 
@@ -165,7 +166,7 @@ def gen_chapters(chapters, output):
             'thumbnail_base': thumb_base,
         }
         gen_html('index', html_dir, chapter.markdown_file,
-                 generic_tmpl_name='chapter', extra_context=context)
+                 template_name='chapter', extra_context=context)
 
 
 def gen_dir_from_markdown(source, output, generic_tmpl_name='content.jinja',
@@ -190,7 +191,8 @@ def gen_dir_from_markdown(source, output, generic_tmpl_name='content.jinja',
 
 
 def gen_html(file_name, output_dir, markdown_file=None,
-             generic_tmpl_name=None, extra_context={}):
+             template_name=None, generic_tmpl_name=None,
+             extra_context={}):
     '''
     Generates an html file from the given inputs.
       'file_name':     Name to give the file. '.html' will be appended if
@@ -217,10 +219,18 @@ def gen_html(file_name, output_dir, markdown_file=None,
         context['page_title'] = file_name
 
     try:
-        template = env.get_template(file_name)
+        if template_name:
+            template = env.get_template(template_name)
+        else:
+            template = env.get_template(file_name)
     except TemplateNotFound:
         try:
-            template = env.get_template(generic_tmpl_name)
+            if generic_tmpl_name:
+                template = env.get_template(generic_tmpl_name)
+            else:
+                message("Could not find template to use for {0} in {1}",
+                        file_name, output_dir)
+                raise GyokoException()
         except TemplateNotFound:
             message('Could not find template for {0} (tried "{1}")',
                     str(output_dir), generic_tmpl_name)
