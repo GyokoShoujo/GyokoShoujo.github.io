@@ -71,8 +71,8 @@ def gen_dir_from_images(source, output, slug, chapter_title):
     page_title = chapter_title
     page_count = 0
     pages = {}
-    url_base = '/static/' + slug + '/page-images'
-    thumb_base = '/static/' + slug + '/page-thumbnails'
+    url_base = '//static/' + slug + '/page-images'
+    thumb_base = '//static/' + slug + '/page-thumbnails'
     for img in source.glob('*.png'):
         parts = img.name.split('-', 1)
         if len(parts) == 2:
