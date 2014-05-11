@@ -28,7 +28,8 @@ def git(command, *args):
         args = tuple(x for x in args if x != '--quiet')
     try:
         debug('Executing git command: {0}'.format(' '.join(args)))
-        proc = subprocess.Popen(args, universal_newlines=True, cwd=working_dir)
+        proc = subprocess.Popen(args, universal_newlines=True, cwd=working_dir,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate(timeout=60)
     except subprocess.TimeoutExpired:
         proc.kill()
@@ -38,12 +39,12 @@ def git(command, *args):
     if result != 0:
         message('Git command failed:\n{0}'.format(' '.join(args)))
         if stdout:
-            debug(stdout)
+            debug('Output of git {0}:\n{1}', command, stdout)
         if stderr:
-            info(stderr)
+            info('Output of git {0}:\n{1}', command, stderr)
         raise GyokoException()
     if stdout:
-        debug(stdout)
+        debug('Output of git {0}:\n{1}', command, stdout)
     return stdout, stderr
 
 
