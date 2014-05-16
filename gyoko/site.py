@@ -15,7 +15,7 @@ from .log import message, info, debug
 env = None
 
 Chapter = namedtuple('Chapter', ['dir', 'pages', 'number', 'title',
-                                 'slug', 'markdown_file', ])
+                                 'slug', 'cover', 'markdown_file', ])
 Page = namedtuple('Page', ['source', 'number', 'title', 'markdown_file', ])
 
 
@@ -77,22 +77,34 @@ def build_chapters(source):
             raise GyokoException()
         chapter_titles.add(title)
         md_file = chapter_dir.parent / 'index.md'
-        chapter = Chapter(chapter_dir, [], int(chapter_num),
-                          title, slugify(title), md_file)
         page_title = title
+        pages = []
+        cover = None
+
         for img in chapter_dir.glob('*.png'):
-            parts = img.name.split('-', 1)
+            parts = img.stem.split('-', 1)
             if len(parts) == 2:
                 img_num, page_title = (x.strip() for x in parts)
+            elif parts[0].lower() == 'cover':
+                cover = img
+                continue
             else:
                 img_num = parts[0].strip()
             md_file = img.parent / (img.stem + '.md')
-            chapter.pages.append(Page(img, int(img_num), page_title, md_file))
-        if len(chapter.pages) == 0:
-            info('No images found for chapter {0}', chapter.title)
+            pages.append(Page(img, int(img_num), page_title, md_file))
 
-        chapter.pages.sort(key=lambda p: p.number)
-        chapters.append(chapter)
+        pages.sort(key=lambda p: p.number)
+        if len(pages) == 0:
+            message('No images found for chapter {0}', chapter.title)
+            raise GyokoException()
+        if cover is None:
+            message('No cover found for chapter {0}, using first page.',
+                    chapter.title)
+            cover = pages[0].source
+
+        chapters.append(
+            Chapter(chapter_dir, pages, int(chapter_num), title,
+                    slugify(title), cover, md_file))
 
     chapters.sort(key=lambda c: c.number)
     return chapters
@@ -125,8 +137,13 @@ def gen_chapters(chapters, output):
         for dir in (html_dir, img_dir, thumbnail_dir):
             dir.mkdir(parents=True)
 
+        cover_name = '{0}-cover.png'.format(chapter.slug)
+        shutil.copy2(str(chapter.cover.resolve()),
+                     str(output / 'static' / cover_name))
+
         img_base = '/static/' + chapter.slug + '/page-images'
         thumb_base = '/static/' + chapter.slug + '/page-thumbnails'
+
         for page_idx, page in enumerate(chapter.pages):
             page_base = 'page-{0}'.format(page.number)
             img_name = page_base + '.png'
@@ -161,6 +178,7 @@ def gen_chapters(chapters, output):
 
         context = {
             'chapter': chapter,
+            'cover_image': '/static/{0}'.format(cover_name),
             'page_title': chapter.title,
             'file_base': 'page',
             'thumbnail_base': thumb_base,
