@@ -1,13 +1,18 @@
 {% extends "base.jinja" %}
 
 {% block body %}
+  <a href="/{{ chapter.slug }}/{{ file_base }}-1.html">
+    <img src="{{ cover_image }}" />
+  </a>
+  {#
   {% for page in chapter.pages %}
-    <div class="chapter-thumbnails chapter-thumbnails-{{ loop.cycle('even', 'odd') }}">
+    <div class="chapter-index chapter-index-{{ loop.cycle('even', 'odd') }}">
       <a href="/{{ chapter.slug }}/{{ file_base }}-{{ page.number }}.html">
-        <img src="{{ thumbnail_base }}/{{ file_base }}-{{ page.number }}.png" />
+        {{ page.title }}
       </a>
     </div>
   {% endfor %}
+  #}
   <div class="main-content">
   {{ content_markdown }}
   </div>
