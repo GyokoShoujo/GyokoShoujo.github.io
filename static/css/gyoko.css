@@ -23,6 +23,9 @@ img.page-thumbnail { box-shadow: 4px 4px 2px #888888;   border: solid 1px #df2e2
 .header     { margin-bottom: 1em; width: 753px;  }
 .header img { margin-left: 25px;  width: 702px;  }
 
-ul.chapter-links {  list-style-type: none; }
+table.chapter-links              { width: 753px;      border: none;      }
+table.chapter-links td           { padding: 8px;      font-size: 2em;    vertical-align: top; }
+table.chapter-links td.thumbnail { width: 200px;      margin: 0;                              }
+table.chapter-links td.title     { margin-left: 32px; padding-top: 32px;                      }
 
 .pager-footer  { width: 753px; text-align: center; }
