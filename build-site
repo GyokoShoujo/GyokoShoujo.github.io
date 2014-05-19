@@ -91,7 +91,7 @@ import tempfile
 import gyoko
 from gyoko import log
 
-DEFAULT_BRANCH='gh-pages'
+DEFAULT_BRANCH='master'
 DEFAULT_REMOTE='origin'
 DEFAULT_REPO='git@github.com:GyokoShoujo/GyokoShoujo.github.io.git'
 
