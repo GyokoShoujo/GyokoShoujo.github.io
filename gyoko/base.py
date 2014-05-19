@@ -86,7 +86,10 @@ def push_site(remote, branch):
     '''
     debug('pushing site in {0} to {1} {2}',
           working_dir, remote, branch)
-    git('push', '--quiet', remote, branch)
+    if verbosity >= 1:
+        git('push', remote, branch)
+    else:
+        git('push', '--quiet', remote, branch)
 
 
 def did_site_change():
