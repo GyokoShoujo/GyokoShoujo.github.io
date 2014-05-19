@@ -4,7 +4,8 @@ import pathlib
 import subprocess
 
 from .exceptions import GyokoException
-from .log import message, info, debug, verbosity
+from .log import message, info, debug
+import gyoko.log as log
 
 
 working_dir = None
@@ -24,7 +25,7 @@ def git(command, *args):
     Runs a git subcommand. *args is a list of parameters to give to git.
     '''
     args = ('git', command,) + tuple(str(x) for x in args)
-    if verbosity > 1:
+    if log.verbosity > 1:
         args = tuple(x for x in args if x != '--quiet')
     try:
         debug('Executing git command: {0}'.format(' '.join(args)))
@@ -86,10 +87,7 @@ def push_site(remote, branch):
     '''
     debug('pushing site in {0} to {1} {2}',
           working_dir, remote, branch)
-    if verbosity >= 1:
-        git('push', remote, branch)
-    else:
-        git('push', '--quiet', remote, branch)
+    git('push', '--quiet', remote, branch)
 
 
 def did_site_change():
