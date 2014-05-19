@@ -1,4 +1,4 @@
-from collections import namedtuple
+from functools import lru_cache
 import pathlib
 import shutil
 
@@ -14,9 +14,98 @@ from .log import message, info, debug
 
 env = None
 
-Chapter = namedtuple('Chapter', ['dir', 'pages', 'number', 'title',
-                                 'slug', 'cover', 'markdown_file', ])
-Page = namedtuple('Page', ['source', 'number', 'title', 'markdown_file', ])
+CACHE_SIZE = 256
+THUMBNAIL_DIR = 'page-thumbnails'
+IMAGE_DIR = 'page-images'
+
+
+class Chapter:
+
+    __slots__ = ('dir', 'number', 'title', 'cover', 'pages', 'slug', 'markdown_file',
+                 'cover_name', 'image_uri', 'cover_image_uri', 'cover_thumbnail_uri',
+                 'html_uri', 'thumbnail_uri', '_base')
+
+    def __init__(self, dir, number, title):
+        self.dir = dir
+        self.number = number
+        self.title = title
+        self.cover = None
+        self.pages = []
+        self.slug = slugify(self.title)
+        self.markdown_file = self.dir.parent / 'index.md'
+        self.cover_name = '{0}-cover.png'.format(self.slug)
+        self.image_uri = '/static/{0}/{1}'.format(self.slug, IMAGE_DIR)
+        self.cover_image_uri = '{0}/{1}'.format(self.image_uri, self.cover_name)
+        self.thumbnail_uri = '/static/{0}/{1}'.format(self.slug, THUMBNAIL_DIR)
+        self.cover_thumbnail_uri = '{0}/{1}'.format(self.thumbnail_uri, self.cover_name)
+        self.html_uri = '/{0}'.format(self.slug)
+
+    def prepare_for_output(self, base):
+        self._base = base
+        for dir in (self.html_dir, self.image_dir, self.thumbnail_dir):
+            dir.mkdir(parents=True)
+
+    @property
+    @lru_cache(maxsize=CACHE_SIZE)
+    def html_file(self):
+        return self.html_dir(self._base) / 'index.html'
+
+    @property
+    @lru_cache(maxsize=CACHE_SIZE)
+    def html_dir(self):
+        return self._base / self.slug
+
+    @property
+    @lru_cache(maxsize=CACHE_SIZE)
+    def thumbnail_dir(self):
+        return self._base / 'static' / self.slug / THUMBNAIL_DIR
+
+    @property
+    @lru_cache(maxsize=CACHE_SIZE)
+    def image_dir(self):
+        return self._base / 'static' / self.slug / IMAGE_DIR
+
+    @property
+    @lru_cache(maxsize=CACHE_SIZE)
+    def cover_image(self):
+        return self.image_dir / self.cover_name
+
+    @property
+    @lru_cache(maxsize=CACHE_SIZE)
+    def cover_thumbnail(self):
+        return self.thumbnail_dir / self.cover_name
+
+
+class Page:
+
+    __slots__ = ('chapter', 'source', 'number', 'title', 'stem', 'html_uri',
+                 'markdown_file', 'thumbnail_uri', 'image_uri', )
+
+    def __init__(self, chapter, source, number, title):
+        self.chapter = chapter
+        self.source = source
+        self.number = number
+        self.title = title
+        self.stem = 'page-{0}'.format(self.number)
+        self.html_uri = '{0}/{1}.html'.format(self.chapter.html_uri, self.stem)
+        self.markdown_file = self.source.parent / (self.source.stem + '.md')
+        self.thumbnail_uri = '{0}/{1}.png'.format(self.chapter.thumbnail_uri, self.stem)
+        self.image_uri = '{0}/{1}.png'.format(self.chapter.image_uri, self.stem)
+
+    @property
+    @lru_cache(maxsize=CACHE_SIZE)
+    def html_file(self):
+        return self.chapter.html_dir / ('{0}.html'.format(self.stem))
+
+    @property
+    @lru_cache(maxsize=CACHE_SIZE)
+    def output_thumbnail(self):
+        return self.chapter.thumbnail_dir / ('{0}.png'.format(self.stem))
+
+    @property
+    @lru_cache(maxsize=CACHE_SIZE)
+    def output_image(self):
+        return self.chapter.image_dir / ('{0}.png'.format(self.stem))
 
 
 def gen_site(source_dir):
@@ -76,10 +165,9 @@ def build_chapters(source):
             message('Chapter title must be unique. Exiting.')
             raise GyokoException()
         chapter_titles.add(title)
-        md_file = chapter_dir.parent / 'index.md'
         page_title = title
-        pages = []
         cover = None
+        chapter = Chapter(chapter_dir, int(chapter_num), title)
 
         for img in chapter_dir.glob('*.png'):
             parts = img.stem.split('-', 1)
@@ -90,21 +178,18 @@ def build_chapters(source):
                 continue
             else:
                 img_num = parts[0].strip()
-            md_file = img.parent / (img.stem + '.md')
-            pages.append(Page(img, int(img_num), page_title, md_file))
+            chapter.pages.append(Page(chapter, img, int(img_num), page_title))
 
-        pages.sort(key=lambda p: p.number)
-        if len(pages) == 0:
+        chapter.pages.sort(key=lambda p: p.number)
+        if len(chapter.pages) == 0:
             message('No images found for chapter {0}', chapter.title)
             raise GyokoException()
         if cover is None:
             message('No cover found for chapter {0}, using first page.',
                     chapter.title)
-            cover = pages[0].source
-
-        chapters.append(
-            Chapter(chapter_dir, pages, int(chapter_num), title,
-                    slugify(title), cover, md_file))
+            cover = chapter.pages[0].source
+        chapter.cover = cover
+        chapters.append(chapter)
 
     chapters.sort(key=lambda c: c.number)
     return chapters
@@ -128,62 +213,44 @@ def gen_chapters(chapters, output):
     '''
     page_count = sum([len(c.pages) for c in chapters])
     page_num = 1
-    prev_url = None
+    prev_uri = None
     for chapter_idx, chapter in enumerate(chapters):
-        html_dir = output / chapter.slug
-        img_dir = output / 'static' / chapter.slug / 'page-images'
-        thumbnail_dir = output / 'static' / chapter.slug / 'page-thumbnails'
+        chapter.prepare_for_output(output)
 
-        for dir in (html_dir, img_dir, thumbnail_dir):
-            dir.mkdir(parents=True)
-
-        cover_name = '{0}-cover.png'.format(chapter.slug)
-        shutil.copy2(str(chapter.cover.resolve()),
-                     str(output / 'static' / cover_name))
-
-        img_base = '/static/' + chapter.slug + '/page-images'
-        thumb_base = '/static/' + chapter.slug + '/page-thumbnails'
+        shutil.copy2(str(chapter.cover.resolve()), str(chapter.cover_image))
+        make_thumbnail(chapter.cover, chapter.cover_thumbnail)
 
         for page_idx, page in enumerate(chapter.pages):
-            page_base = 'page-{0}'.format(page.number)
-            img_name = page_base + '.png'
-            thumbnail = thumbnail_dir / img_name
-            img_dest = img_dir / img_name
-            shutil.copy2(str(page.source.resolve()), str(img_dest))
-            make_thumbnail(page.source, thumbnail)
-            page_url = '/{0}/{1}.html'.format(chapter.slug, page_base)
+            shutil.copy2(str(page.source.resolve()), str(page.output_image))
+            make_thumbnail(page.source, page.output_thumbnail)
 
+            next_uri = None
             if page_idx < len(chapter.pages) - 1:
-                next_page = '/{0}/page-{1}.html'.format(chapter.slug, page.number+1)
-            elif (chapter_idx + 1 < len(chapters) and
-                  len(chapters[chapter_idx+1].pages) > 0):
-                next_page = '/{0}/page-1.html'.format(chapters[chapter_idx+1].slug)
-            else:
-                next_page = None
+                next_uri = chapter.pages[page_idx+1].html_uri
+            elif chapter_idx + 1 < len(chapters):
+                # Link to the cover of the next chapter
+                next_uri = chapters[chapter_idx+1].html_uri
+
             context = {
                 'page': page,
                 'page_title': page.title,
-                'page_image': img_base + '/' + img_name,
-                'has_previous': prev_url is not None,
-                'page_previous': prev_url,
-                'has_next': next_page is not None,
-                'page_next': next_page,
+                'has_previous': prev_uri is not None,
+                'previous_uri': prev_uri,
+                'has_next': next_uri is not None,
+                'next_uri': next_uri,
                 'page_number': page_num,
                 'page_count': page_count,
             }
-            gen_html(page_base, html_dir, page.markdown_file,
+            gen_html(page.stem, page.chapter.html_dir, page.markdown_file,
                      template_name='page', extra_context=context)
-            prev_url = page_url
+            prev_uri = page.html_uri
             page_num += 1
 
         context = {
             'chapter': chapter,
-            'cover_image': '/static/{0}'.format(cover_name),
             'page_title': chapter.title,
-            'file_base': 'page',
-            'thumbnail_base': thumb_base,
         }
-        gen_html('index', html_dir, chapter.markdown_file,
+        gen_html('index', chapter.html_dir, chapter.markdown_file,
                  template_name='chapter', extra_context=context)
 
 

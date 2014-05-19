@@ -1,8 +1,9 @@
 {% extends "base.jinja" %}
 
 {% block body %}
-  <a href="/{{ chapter.slug }}/{{ file_base }}-1.html">
-    <img src="{{ cover_image }}" />
+  <div class="header"><a href="/"><img src="/static/images/header.png"/></a></div>
+  <a href="{{ chapter.pages[0].html_uri }}">
+    <img class="page-image" src="{{ chapter.cover_image_uri }}" />
   </a>
   {#
   {% for page in chapter.pages %}
@@ -15,5 +16,8 @@
   #}
   <div class="main-content">
   {{ content_markdown }}
+  </div>
+  <div class="pager-footer">
+    <a href="{{ chapter.pages[0].html_uri }}">{{ chapter.title }}</a>
   </div>
 {% endblock %}

@@ -1,15 +1,20 @@
 {% extends "base.jinja" %}
 
 {% block body %}
-  <h1>Gyoko Shoujo</h1>
-  <img src="/static/images/Cover.png"/>
+  <a href="/{{ chapters[0].slug }}/page-1.html">
+    <img class="page-image" src="/static/images/Cover.png"/>
+  </a>
   <div class="main-content">
   {{ content_markdown }}
   </div>
+  <h2>Chapters</h2>
   <ul class="chapter-links">
   {% for chapter in chapters %}
     <li class="chapter-link">
-      <a href="/{{ chapter.slug }}/index.html">{{ chapter.title }}</a>
+      <a href="{{ chapter.html_uri }}">
+        <img class="page-thumbnail" src="{{ chapter.cover_thumbnail_uri }}" />
+        {{ chapter.number }}. {{ chapter.title }}
+      </a>
     </li>
   {% endfor %}
   </ul>

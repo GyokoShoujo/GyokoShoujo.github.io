@@ -1,17 +1,16 @@
 {% extends "base.jinja" %}
 
 {% block body %}
-  {% if has_next %}<a href="{{ page_next }}">{% endif %}
-  <img src="{{ page_image }}" />
+  <div class="header"><a href="/"><img src="/static/images/header.png"/></a></div>
+  {% if has_next %}<a href="{{ next_uri }}">{% endif %}
+  <img class="page-image" src="{{ page.image_uri }}" />
   {% if has_next %}</a>{% endif %}
-  <div class="pager-footer pager-links pager-links-previous">
-    {% if has_previous %}<a href="{{ page_previous }}">Previous</a>{% endif %}
-  </div>
-  <div class="pager-footer page">{{ page_number }} of {{ page_count }}</div>
-  <div class="pager-footer pager-links pager-links-next">
-    {% if has_next %}<a href="{{ page_next }}">Next</a>{% endif %}
-  </div>
   <div class="main-content">
   {{ content_markdown }}
+  </div>
+  <div class="pager-footer">
+    {% if has_previous %}<a href="{{ previous_uri }}"> ≪ </a>{% endif %}
+    {{ page_number }} of {{ page_count }}
+    {% if has_next %}<a href="{{ next_uri }}"> ≫ </a>{% endif %}
   </div>
 {% endblock %}
