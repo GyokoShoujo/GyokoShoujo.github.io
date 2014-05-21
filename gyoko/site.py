@@ -119,6 +119,9 @@ def gen_site(source_dir):
     if not (source.exists() and source.is_dir()):
         message('Source directory {0} does not exist', source)
 
+    with open(str(dest / 'CNAME'), 'w') as f:
+        f.write('www.gyokoshoujo.com\n')
+
     tmpl_dir = source / "templates"
     content_dir = source / "content"
 
