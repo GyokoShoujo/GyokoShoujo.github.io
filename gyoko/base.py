@@ -1,6 +1,7 @@
 
 import datetime
 import pathlib
+import os
 import subprocess
 
 from .exceptions import GyokoException
@@ -25,12 +26,16 @@ def git(command, *args):
     Runs a git subcommand. *args is a list of parameters to give to git.
     '''
     args = ('git', command,) + tuple(str(x) for x in args)
+    env = os.environ
     if log.verbosity > 1:
         args = tuple(x for x in args if x != '--quiet')
+    if log.verbosity > 2:
+        env['GIT_TRACE'] = '1'
     try:
         debug('Executing git command: {0}'.format(' '.join(args)))
         proc = subprocess.Popen(args, universal_newlines=True, cwd=working_dir,
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                env=env)
         stdout, stderr = proc.communicate(timeout=60)
     except subprocess.TimeoutExpired:
         proc.kill()
@@ -40,9 +45,9 @@ def git(command, *args):
     if result != 0:
         message('Git command failed:\n{0}'.format(' '.join(args)))
         if stdout:
-            debug('Output of git {0}:\n{1}', command, stdout)
+            debug('stdout from git {0}:\n{1}', command, stdout)
         if stderr:
-            info('Output of git {0}:\n{1}', command, stderr)
+            info('stderr from git {0}:\n{1}', command, stderr)
         raise GyokoException()
     if stdout:
         debug('Output of git {0}:\n{1}', command, stdout)
