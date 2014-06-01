@@ -135,6 +135,7 @@ if __name__=='__main__':
                 gyoko.commit_site()
                 if args.push:
                     gyoko.push_site(args.remote, args.branch)
+            log.message('Site updated successfully!')
         except gyoko.GyokoException as e:
             # This already would have everything necessary logged, so
             # we can just terminate.
