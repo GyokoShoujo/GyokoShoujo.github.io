@@ -93,7 +93,6 @@ from gyoko import log
 
 DEFAULT_BRANCH='master'
 DEFAULT_REMOTE='origin'
-DEFAULT_REPO='git@github.com:GyokoShoujo/GyokoShoujo.github.io.git'
 
 
 def parse_args():
@@ -105,8 +104,6 @@ def parse_args():
                         default=DEFAULT_BRANCH, help='git branch to commit to')
     parser.add_argument('--remote', dest='remote', type=str, nargs='?',
                         default=DEFAULT_REMOTE, help='git remote to push to')
-    parser.add_argument('--repo', dest='repo', type=str, nargs='?',
-                        default=DEFAULT_REPO, help='git repo to work on')
     parser.add_argument('--source', dest='source', type=str, nargs='?',
                         default=pathlib.Path(__file__).parent.resolve(),
                         help='source directory for site')
@@ -132,7 +129,7 @@ if __name__=='__main__':
     with tempfile.TemporaryDirectory() as build_dir:
         try:
             gyoko.set_working_dir(build_dir)
-            gyoko.checkout_site(args.repo, args.branch)
+            gyoko.checkout_site(args.branch)
             gyoko.gen_site(args.source)
             if args.commit and gyoko.did_site_change():
                 gyoko.commit_site()

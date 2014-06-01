@@ -2,6 +2,7 @@
 import datetime
 import pathlib
 import os
+import os.path
 import subprocess
 
 from .exceptions import GyokoException
@@ -10,6 +11,7 @@ import gyoko.log as log
 
 
 working_dir = None
+local_repo = os.path.join(os.path.dirname(__file__), '..')
 
 
 def set_working_dir(directory):
@@ -21,9 +23,12 @@ def set_working_dir(directory):
     working_dir = directory
 
 
-def git(command, *args):
+def git(command, *args, **kwargs):
     '''
     Runs a git subcommand. *args is a list of parameters to give to git.
+    Certain meta-options can be passed via keyword arguments. Currently
+    supported are:
+      cwd: Directory to operate within
     '''
     args = ('git', command,) + tuple(str(x) for x in args)
     env = os.environ
@@ -31,9 +36,10 @@ def git(command, *args):
         args = tuple(x for x in args if x != '--quiet')
     if log.verbosity > 2:
         env['GIT_TRACE'] = '1'
+    cwd = kwargs.get('cwd', working_dir)
     try:
         debug('Executing git command: {0}'.format(' '.join(args)))
-        proc = subprocess.Popen(args, universal_newlines=True, cwd=working_dir,
+        proc = subprocess.Popen(args, universal_newlines=True, cwd=cwd,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 env=env)
         stdout, stderr = proc.communicate(timeout=60)
@@ -54,12 +60,19 @@ def git(command, *args):
     return stdout, stderr
 
 
-def checkout_site(repo, branch):
+def checkout_site(branch):
     '''
     Prepares the git repository for site generation.
     '''
-    debug('checking out {0} to {1}', branch, working_dir)
-    git('clone', '--quiet', '--depth', 5, '--branch', branch, repo, '.')
+    debug('testing that repositories are in sync')
+    git('remote', 'update', cwd=local_repo)
+    local, _ = git('rev-parse', branch, cwd=local_repo)
+    remote, _ = git('rev-parse', 'origin/{0}'.format(branch), cwd=local_repo)
+    if local != remote:
+        message("Local repository doesn't match remote. Fix that first.")
+        raise GyokoException()
+    debug('cloning {0} to {1}', branch, working_dir)
+    git('clone', '--quiet', '--branch', branch, local_repo, '.')
     output = pathlib.Path(working_dir)
 
     def rm_tree(d):
@@ -90,9 +103,10 @@ def push_site(remote, branch):
     '''
     Pushes changes to the repository to the given remote branch.
     '''
-    debug('pushing site in {0} to {1} {2}',
+    debug('pushing site in {0} to {1} {2} (through local repo)',
           working_dir, remote, branch)
-    git('push', '--quiet', remote, branch)
+    git('push', '--quiet', 'origin', branch)
+    git('push', '--quiet', remote, branch, cwd=local_repo)
 
 
 def did_site_change():
