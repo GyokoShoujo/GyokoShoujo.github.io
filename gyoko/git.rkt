@@ -11,21 +11,35 @@
      Verbosity 2: message, info, and debug calls are displayed
  |#
 (define log-level (make-parameter 2)) ;;todo: should be 0
-(define (log level . params)
+(define MESSAGE 0)
+(define INFO 1)
+(define DEBUG 2)
+(define (logger level . params)
   (when (<= level (log-level))
     (apply printf params)))
-(define (message msg . params) (apply log 0 msg params))
-(define (info    msg . params) (apply log 1 msg params))
-(define (debug   msg . params) (apply log 2 msg params))
+(define (log-lines level lines)
+  (when (not (zero? (length lines)))
+      (begin
+        (logger level "~s~n" (car lines))
+        (log-lines level (cdr lines)))))
+      
+(define (message msg . params) (apply logger MESSAGE msg params))
+(define (info    msg . params) (apply logger INFO msg params))
+(define (debug   msg . params) (apply logger DEBUG msg params))
 
+
+(define (clean-output bytes)
+  (string-split 
+   (string-replace (bytes->string/locale bytes) "\t" "    ") 
+   "\n"))
 
 ;; local-git is our current repository. It is the source used to pull
 ;; from.
 (define local-git (find-system-path 'run-file))
 ;; working-git is the git repo that will be cloned into and that the
 ;; site will actually be generated in.
-(define working-git (build-path (find-system-path 'temp-dir) 
-                            (string-append "gyo" (~a (current-seconds)))))
+(define build-git (build-path (find-system-path 'temp-dir) 
+                              (string-append "gyo" (~a (current-seconds)))))
 
 ;; Parameter that determines where (git) works.
 (define working-git (make-parameter local-git))
@@ -45,21 +59,22 @@
                                (find-executable-path "git") 
                                "-C" (working-git) command 
                                arg-list)))
-           (stdout-bytes (get-output-bytes stdout-ob))
-           (stderr-bytes (get-output-bytes stderr-ob)))
+           (stdout-lines (clean-output (get-output-bytes stdout-ob)))
+           (stderr-lines (clean-output (get-output-bytes stderr-ob))))
       (if (zero? exit-code)
           (begin
-            (debug "Output of git ~s:~n~s~n" command stdout-bytes)
-            (list stdout-bytes stderr-bytes))
+            (debug "Output of git ~s:~n" command)
+            (log-lines DEBUG stdout-lines)
+            (list stdout-lines stderr-lines))
           (begin
             (info "Git command failed:~n~s ~s" command (string-join arg-list))
-            (info "stdout: ~s~n" stdout-bytes)
-            (info "stderr: ~s~n" stderr-bytes)
+            (info "stdout:~n")
+            (log-lines INFO stdout-lines)
+            (info "stderr:~n")
+            (log-lines INFO stdout-lines)
             (raise-user-error 'git "git command failed"))))))
 
 
 (define (git-status)
   (parameterize ([working-git (build-path "/Users/travis/src/uln")])
-    (message "Status: ~s~n" (car 
-                             (git "status" '()))
-             )))
+    (git "status" '())))
