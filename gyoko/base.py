@@ -106,7 +106,7 @@ def push_site(remote, branch):
     debug('pushing site in {0} to {1} {2} (through local repo)',
           working_dir, remote, branch)
     git('push', '--quiet', 'origin', branch)
-    git('push', '--quiet', remote, branch, cwd=local_repo)
+    git('push', '--quiet', remote, '{b}:{b}'.format(b=branch), cwd=local_repo)
 
 
 def did_site_change():
