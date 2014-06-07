@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 (provide log-level
          MESSAGE
@@ -16,7 +16,7 @@
      Verbosity 1: message and info calls are displayed
      Verbosity 2: message, info, and debug calls are displayed
  |#
-(define log-level (make-parameter 2)) ;;todo: should be 0
+(define log-level (make-parameter 0))
 (define MESSAGE 0)
 (define INFO 1)
 (define DEBUG 2)
