@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
-# -*- mode: python -*-
+#!/usr/bin/env racket
+;; -*- mode: racket -*-
 
-'''
+#|
 Creates the Gyoko Shoujo site from the images and the directory structure
 in the content directory. The site is then committed to the gh-pages
 branch.
@@ -82,71 +82,35 @@ glog-page.jinja:  Renders a single article for the blog.
 
 Images, CSS files and the like belong in the static directory and will be
 copied directly to the output's static directory.
-'''
-import argparse
-import pathlib
-import sys
-import tempfile
+|#
 
-import gyoko
-from gyoko import log
+#lang racket/base
 
-DEFAULT_BRANCH='master'
-DEFAULT_REMOTE='origin'
+(require racket/cmdline
+         racket/format)
 
+(require "gyoko/git.rkt"
+         "gyoko/logger.rkt")
 
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description='Builds the Gyoko Shoujo web site, commits the changes '
-        '(to the {0} branch by default), and pushes the branch (to {1} '
-        'by default).'.format(DEFAULT_BRANCH, DEFAULT_REMOTE))
-    parser.add_argument('--branch', dest='branch', type=str, nargs='?',
-                        default=DEFAULT_BRANCH, help='git branch to commit to')
-    parser.add_argument('--remote', dest='remote', type=str, nargs='?',
-                        default=DEFAULT_REMOTE, help='git remote to push to')
-    parser.add_argument('--source', dest='source', type=str, nargs='?',
-                        default=pathlib.Path(__file__).parent.resolve(),
-                        help='source directory for site')
-    parser.add_argument('--no-commit', dest='commit', action='store_const',
-                        const=False, default=True,
-                        help="don't commit the changes (implies no-push)")
-    parser.add_argument('--no-push', dest='push', action='store_const',
-                        const=False, default=True,
-                        help="don't push the changes")
-    parser.add_argument('--verbose', '-v', dest='verbosity', type=int,
-                        default=0, choices=[0,1,2], help='how verbose to be')
+(define branch    (make-parameter "master"))
+(define remote    (make-parameter "origin"))
+(define commit?   (make-parameter #t))
+(define push?     (make-parameter #t))
 
-    args = parser.parse_args()
-    if args.commit is False:
-        args.push = False
-    return args
+(command-line #:program "build-site"
+              #:once-each
+              [("--branch")   b  "Branch to commit to <master>"    (branch b)  ]
+              [("--remote")   r  "Remote repo to push to <origin>" (remote r)  ]
+              [("--no-commit")   "Don't commit changes"            (commit? #f)]
+              [("--no-push")     "Don't push changes"   (push? #f) (commit? #f)]
+              #:once-any
+              [("-v" "--verbose") "Be more verbose"  (log-level 1)]
+              [("-d" "--debug")   "Be extra verbose" (log-level 2)])
 
+(local-git (find-git-base (find-system-path 'run-file)))
+(build-git (build-path (find-system-path 'temp-dir)
+                       (string-append "gyo" (~a (current-seconds)))))
 
-if __name__=='__main__':
-    args = parse_args()
-    log.set_log_verbosity(args.verbosity)
+(debug "Using local git repo in: ~s~n" (local-git))
 
-    with tempfile.TemporaryDirectory() as build_dir:
-        try:
-            gyoko.set_working_dir(build_dir)
-            gyoko.checkout_site(args.branch)
-            gyoko.gen_site(args.source)
-            if args.commit and gyoko.did_site_change():
-                gyoko.commit_site()
-                if args.push:
-                    gyoko.push_site(args.remote, args.branch)
-            log.message('Site updated successfully!')
-        except gyoko.GyokoException as e:
-            # This already would have everything necessary logged, so
-            # we can just terminate.
-            exit(1)
-        except Exception as e:
-            if args.verbosity == 0:
-                print('An unkown error occured: {0}'.format(e.args[0]),
-                      file=sys.stderr)
-            else:
-                import traceback
-                traceback.print_exc()
-            exit(1)
-
-    exit(0)
+(checkout-site (branch))
