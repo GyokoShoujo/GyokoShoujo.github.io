@@ -2,7 +2,8 @@
 
 (require racket/system
          racket/format
-         racket/string)
+         racket/string
+         racket/file)
 
 (require "logger.rkt")
 
@@ -72,24 +73,24 @@
 
 (define (local-up-to-date? branch)
   (git #"remote" #"update")
-  (string=? (git #"rev-parse" branch)
-            (git #"rev-parse" (string-append "origin/" branch))))
+  (string=? (caar (git #"rev-parse" branch))
+            (caar (git #"rev-parse" (string-append "origin/" branch)))))
 
 
 ;; Prepare the temporary git repository for site generation
 (define (checkout-site branch)
   (define (clear-checkout-tree)
-    (for ([f (directory-list (working-git))]
-          #:when (memf string=? (path->string f)
+    (for ([f (directory-list (build-git))]
+          #:when (memf (λ (arg) (not (string=? (path->string f) arg)))
                        (list ".git")))
-      (if (directory-exists? f)
-          (delete-directory f)
-          (delete-file f))))
+      (debug "Removing ~s~n" f)
+      (delete-directory/files (build-path (build-git) f))))
   (debug "testing that local repository is up to date~n")
   (parameterize ((working-git (local-git)))
     (when (not (local-up-to-date? branch))
       (raise-user-error 'git "Local repository doesn't match remote. Fix that first.")))
   (debug "cloning ~s to ~s~n" branch (build-git))
   (parameterize ((working-git (build-git)))
+    (make-directory (working-git))
     (git #"clone" #"--quiet" #"--branch" branch (local-git) #".")
     (clear-checkout-tree)))
