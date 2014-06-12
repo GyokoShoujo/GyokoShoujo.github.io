@@ -44,7 +44,7 @@
     (super-new)
     ;; directory: path?, number: natural?, title: string?
     ;; find-pages?: boolean?
-    (init-field directory number title [find-pages? #f])
+    (init-field directory number title)
     
     (when (equal? (site-output-path) null)
         (error 'site "site-output-path needs to be parameterized before creating a chapter"))
@@ -79,20 +79,11 @@
            [cover-thumbnail-dest (build-path thumbnail-directory cover-name)]
            )
     
-    ;; Look for pages in the chapter if desired.
-    (when find-pages?
-      (for ([file (in-list (directory-list directory #:build? #t))])
-        (let ((file-info (regexp-match #px".*/(\\d+)( - ([^/]+?))?\\.png$" 
-                                       (path->string file))))
-          (when file-info
-              (let ((title (if (cadddr file-info) (cadddr file-info) ""))
-                    (chapter (string->number (cadr file-info))))
-                (make-object page% this file chapter title))))))
     ))
 
 (module+ test
   ;; Test chapter% fields
-  (check-true (string=? (site-output-path) ""))
+  (check-true (equal? (site-output-path) null))
   (check-exn exn:fail? 
              (lambda () (make-object chapter% (string->path "/thunk") 1 "I'm a failure?")))
   (site-output-path "/var/no")
@@ -210,24 +201,37 @@
 
 (define (build-chapters)
   (let ((chapter-path (build-path (site-content-path) "content")))
-    (define (rec-build-chapter dir-list chapter-list)
-      (if (null? dir-list)
-          chapter-list
-          (let ((chapter-info (regexp-match #rx"([0-9]+) - (.+)" 
-                                            (path->string (car dir-list)))))
-            (rec-build-chapter 
-             (cdr dir-list)
-             (if chapter-info
-                 (cons (new chapter% 
-                            (directory (build-path chapter-path (car dir-list)))
-                            (number    (string->number (cadr chapter-info)))
-                            (title     (caddr chapter-info))
-                            [find-pages? #t])
-                       chapter-list)
-                 chapter-list)))))
-    (sort (rec-build-chapter (directory-list chapter-path #:build? #f) null)
+    (sort (for/list ([test-dir (in-list (directory-list chapter-path))]
+                     #:when (regexp-match? #rx"([0-9]+) - (.+)" 
+                                           (path->string test-dir)))
+            (let* ((chapter-info (regexp-match #rx"([0-9]+) - (.+)" 
+                                               (path->string test-dir)))
+                   (chapter-dir  (build-path chapter-path test-dir))
+                   (chapter-num  (string->number (cadr chapter-info)))
+                   (title        (caddr chapter-info))
+                   (chapter      (new chapter% 
+                                      (directory chapter-dir)
+                                      (number    chapter-num)
+                                      (title     title))))
+              (build-pages-for-chapter chapter)
+              chapter))
           (λ (c1 c2) 
             (< (get-field number c1) (get-field number c2))))))
+
+
+(define (build-pages-for-chapter chapter)
+  (for/list ([image (in-list (directory-list (get-field directory chapter)
+                                             #:build? #t))]
+             #:when (regexp-match #px".*/(\\d+)( - ([^/]+?))?\\.png$"
+                                  (path->string image)))
+    (let* ((file-info   (regexp-match #px".*/(\\d+)( - ([^/]+?))?\\.png$" 
+                                      (path->string image)))
+           (page-number (string->number (cadr file-info)))
+           (title       (if (cadddr file-info) (cadddr file-info) null)))
+      (new page% 
+           (chapter chapter) (image image) 
+           (number page-number) (title title)))))
+
 
 (define (generate-chapters chapters)
   "todo: create all the page html files based on the chapter% list"
