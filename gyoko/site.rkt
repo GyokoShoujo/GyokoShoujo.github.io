@@ -58,6 +58,17 @@
                                               (get-field number p2))))))
         (set-field! pages this sorted-pages)
         sorted-pages))
+
+    (define/public (generate)
+      (for-each make-directory* 
+                (list html-directory image-directory thumbnail-directory))
+      ;; todo: create cover thumbnails and copy cover images
+      (define (page-gen-rec page-list default-title)
+        (unless (null? page-list)
+          (let ((new-default-title (send (car page-list) generate default-title)))
+            (page-gen-rec (cdr page-list) (if (null? new-default-title)
+                                              default-title new-default-title)))))
+      (page-gen-rec pages title))
     
     (field [cover ""]
            [pages null]
@@ -124,6 +135,11 @@
     (init-field chapter image number title)
     
     (define (stem-name suffix) (string-append stem "." suffix))
+
+    (define/public (generate default-title)
+      (copy-directory/files image image-dest)
+      title
+      )
     
     (field [stem (string-append "page-" (number->string number))]
            [html-uri (string-join (list (get-field html-uri chapter) 
@@ -195,7 +211,7 @@
   (let ((chapters (build-chapters)))
     (copy-static-files)
     (generate-chapters chapters)
-    (generate-markdown-pages chapters)
+    (generate-markdown-pages)
     (generate-index chapters))
   )
 
@@ -234,14 +250,15 @@
 
 
 (define (generate-chapters chapters)
-  "todo: create all the page html files based on the chapter% list"
-  )
+  (for-each (lambda (chapter)  (send chapter generate))
+            chapters))
+
 
 (define (generate-index chapters)
   "todo: create root index.html from index.md and the list of chapters"
   )
 
-(define (generate-markdown-pages chapters)
+(define (generate-markdown-pages)
   "todo: create html pages from markdown pages other than index.md"
   )
 
