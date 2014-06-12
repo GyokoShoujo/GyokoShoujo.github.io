@@ -2,7 +2,8 @@
 
 (require scribble/html
          racket/class
-         racket/string)
+         racket/string
+         racket/file)
 
 (require "slugify.rkt"
          "logger.rkt")
@@ -37,7 +38,6 @@
 
 (define image-directory-name (make-parameter "page-images"))
 (define thumbnail-directory-name (make-parameter "page-thumbnails"))
-(define html-base-directory (make-parameter ""))
 
 (define chapter%
   (class object%
@@ -46,8 +46,8 @@
     ;; find-pages?: boolean?
     (init-field directory number title [find-pages? #f])
     
-    (when (equal? (html-base-directory) "")
-        (error 'site "html-base-directory needs to be parameterized before creating a chapter"))
+    (when (equal? (site-output-path) null)
+        (error 'site "site-output-path needs to be parameterized before creating a chapter"))
 
     (define/public (add-page page)
       (set-field! pages this (cons page pages)))
@@ -69,11 +69,11 @@
            [thumbnail-uri (string-join (list "/static" slug (thumbnail-directory-name)) "/")]
            [cover-thumbnail-uri (string-join (list thumbnail-uri cover-name) "/")]
            [html-uri (string-append "/" slug)]
-           [html-directory (build-path (html-base-directory) slug)]
+           [html-directory (build-path (site-output-path) slug)]
            [html-file-dest (build-path html-directory "index.html")]
-           [image-directory (build-path (html-base-directory) "static" 
+           [image-directory (build-path (site-output-path) "static" 
                                         slug (image-directory-name))]
-           [thumbnail-directory (build-path (html-base-directory) "static" 
+           [thumbnail-directory (build-path (site-output-path) "static" 
                                             slug (thumbnail-directory-name))]
            [cover-image-dest (build-path image-directory cover-name)]
            [cover-thumbnail-dest (build-path thumbnail-directory cover-name)]
@@ -92,10 +92,10 @@
 
 (module+ test
   ;; Test chapter% fields
-  (check-true (string=? (html-base-directory) ""))
+  (check-true (string=? (site-output-path) ""))
   (check-exn exn:fail? 
              (lambda () (make-object chapter% (string->path "/thunk") 1 "I'm a failure?")))
-  (html-base-directory "/var/no")
+  (site-output-path "/var/no")
   (define test-chapter 
     (make-object chapter% (string->path "/tmp") 4 "I'm a chapter!"))
   (check-equal? (get-field slug test-chapter) "im-a-chapter")
@@ -153,7 +153,7 @@
 
 (module+ test
   ;; Test page% fields
-  (html-base-directory "/var/no")
+  (site-output-path "/var/no")
   (define the-chapter 
     (make-object chapter% (string->path "/tmp") 6 "A short chapter"))
   (define p
@@ -182,7 +182,7 @@
 
 (module+ test
   ;; Make sure that page insertion into chapters works as expected
-  (html-base-directory "/var/no")
+  (site-output-path "/var/no")
   (define a-chapter 
     (make-object chapter% (string->path "/tmp") 5 "For the page!"))
   (define page-1
@@ -204,7 +204,7 @@
   (let ((chapters (build-chapters)))
     (copy-static-files)
     (generate-chapters chapters)
-    (generate-markdown-pages)
+    (generate-markdown-pages chapters)
     (generate-index chapters))
   )
 
@@ -242,7 +242,9 @@
   )
 
 (define (copy-static-files)
-  "todo: copy and static files (css, images and the like)"
+  (copy-directory/files (build-path (site-content-path) "static")
+                        (build-path (site-output-path) "static")
+                        #:keep-modify-seconds? #t)
   )
 
 (define (test-path-invariants)
