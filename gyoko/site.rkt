@@ -63,7 +63,9 @@
     (define/public (generate)
       (for-each make-directory* 
                 (list html-directory image-directory thumbnail-directory))
-      ;; todo: create cover thumbnails and copy cover images
+      (copy-directory/files cover-image (build-path image-directory cover-name))
+      (make-thumbnail cover-image (build-path thumbnail-directory cover-name))
+
       (define (page-gen-rec page-list default-title)
         (unless (null? page-list)
           (let ((new-default-title (send (car page-list) generate default-title)))
@@ -71,10 +73,10 @@
                                               default-title new-default-title)))))
       (page-gen-rec pages title))
     
-    (field [cover ""]
+    (field [cover-image (build-path directory "Cover.png")]
            [pages null]
            [slug (slugify title)]
-           [cover-name (string-append slug "-cover.png")]
+           [cover-name "cover.png"]
            [markdown-file (build-path directory "index.md")]
            [image-uri (string-join (list "/static" slug (image-directory-name)) "/")]
            [cover-image-uri (string-join (list image-uri cover-name) "/")]
