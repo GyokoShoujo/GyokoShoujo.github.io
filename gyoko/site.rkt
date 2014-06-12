@@ -6,7 +6,8 @@
          racket/file)
 
 (require "slugify.rkt"
-         "logger.rkt")
+         "logger.rkt"
+         "images.rkt")
 
 (provide generate-site
          site-content-path
@@ -138,6 +139,7 @@
 
     (define/public (generate default-title)
       (copy-directory/files image image-dest)
+      (make-thumbnail image thumbnail-dest)
       title
       )
     
