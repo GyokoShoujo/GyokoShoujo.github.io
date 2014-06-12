@@ -90,7 +90,8 @@ copied directly to the output's static directory.
          racket/format)
 
 (require "gyoko/git.rkt"
-         "gyoko/logger.rkt")
+         "gyoko/logger.rkt"
+         "gyoko/site.rkt")
 
 (define branch    (make-parameter "master"))
 (define remote    (make-parameter "origin"))
@@ -110,7 +111,10 @@ copied directly to the output's static directory.
 (local-git (find-git-base (find-system-path 'run-file)))
 (build-git (build-path (find-system-path 'temp-dir)
                        (string-append "gyo" (~a (current-seconds)))))
+(site-content-path (local-git))
+(site-output-path (build-git))
 
 (debug "Using local git repo in: ~s~n" (local-git))
 
 (checkout-site (branch))
+(generate-site)
