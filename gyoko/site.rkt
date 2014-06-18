@@ -1,4 +1,4 @@
-#lang at-exp racket/base
+#lang racket/base
 
 (require scribble/html
          racket/class
@@ -7,7 +7,8 @@
 
 (require "slugify.rkt"
          "logger.rkt"
-         "images.rkt")
+         "images.rkt"
+         "render.rkt")
 
 (provide generate-site
          site-content-path
@@ -60,18 +61,43 @@
         (set-field! pages this sorted-pages)
         sorted-pages))
 
-    (define/public (generate)
+    (define/public (generate page-count prev-chap-uri next-chap-uri)
+      ;; Generates the chapter and pages html files. Returns a pair
+      ;; containing the current page count and uri of the last page in
+      ;; this chapter.
+      (info "Generating chapter: ~s~n" title)
+      (when (null? pages)
+        (raise-user-error 'site (string-append "Empty page list in chapter:"
+                                               title)))
+      
       (for-each make-directory* 
                 (list html-directory image-directory thumbnail-directory))
       (copy-directory/files cover-image (build-path image-directory cover-name))
       (make-thumbnail cover-image (build-path thumbnail-directory cover-name))
+      
+      ;; Make sure pages are sorted before we start.
+      (let ((current-pages (sorted-pages)))
+        (render-template (build-path (site-content-path) "templates/chapter.ms")
+                         html-file-dest
+                         (hash "chapter_title" title
+                               "page1_uri" (get-field html-uri 
+                                                      (car current-pages))
+                               "cover_image_uri" cover-image-uri
+                               "content_markdown" ""))
 
-      (define (page-gen-rec page-list default-title)
-        (unless (null? page-list)
-          (let ((new-default-title (send (car page-list) generate default-title)))
-            (page-gen-rec (cdr page-list) (if (null? new-default-title)
-                                              default-title new-default-title)))))
-      (page-gen-rec pages title))
+        (define (page-gen-rec page-count page-list default-title prev-uri)
+          (if (null? page-list)
+              (cons page-count prev-uri)
+              (let* ((next-pages (cdr page-list))
+                     (cur-page (car page-list))
+                     (new-default-title (send cur-page generate 
+                                              page-count default-title prev-uri
+                                              (if (null? next-pages) next-chap-uri
+                                                  (get-field html-uri (car next-pages))))))
+                (page-gen-rec (+ page-count 1) next-pages new-default-title
+                              (get-field html-uri cur-page)))))
+        (page-gen-rec page-count current-pages title html-uri)))
+          
     
     (field [cover-image (build-path directory "Cover.png")]
            [pages null]
@@ -139,10 +165,23 @@
     
     (define (stem-name suffix) (string-append stem "." suffix))
 
-    (define/public (generate default-title)
+    (define/public (generate page-number default-title prev-uri next-uri)
+      (info "  page: ~s~n" number)
       (copy-directory/files image image-dest)
       (make-thumbnail image thumbnail-dest)
-      title
+      (let ((current-title (if (null? title) default-title title)))
+        ;; todo: load markdown and include as content_markdown
+        (render-template (build-path (site-content-path) "templates/page.ms")
+                         html-file-dest
+                         (hash "has_previous" (not (null? prev-uri))
+                               "has_next" (not (null? next-uri))
+                               "previous_uri" prev-uri
+                               "next_uri" next-uri
+                               "image_uri" image-uri
+                               "page_title" current-title
+                               "page_number" page-number
+                               "content_markdown" ""))
+        current-title)
       )
     
     (field [stem (string-append "page-" (number->string number))]
@@ -209,10 +248,11 @@
   (check-equal? (get-field stem (caddr (send a-chapter sorted-pages))) "page-3"))
 
 (define (generate-site)
-  (debug "generating site in ~v using source ~v" 
+  (info "Generating site in ~v using source ~v~n" 
          (site-output-path) (site-content-path))
   (test-path-invariants)
   (let ((chapters (build-chapters)))
+    (debug "Found ~s chapters~n" (length chapters))
     (copy-static-files)
     (generate-chapters chapters)
     (generate-markdown-pages)
@@ -251,11 +291,20 @@
       (new page% 
            (chapter chapter) (image image) 
            (number page-number) (title title)))))
-
+  
 
 (define (generate-chapters chapters)
-  (for-each (lambda (chapter)  (send chapter generate))
-            chapters))
+  (define (gen-chapters-rec chapter-list prev-uri page-count)
+    (unless (null? chapter-list)
+      (let* ((next-chapters (cdr chapter-list))
+             (chapter-pair (send (car chapter-list) generate page-count
+                                 prev-uri (if (null? next-chapters)
+                                              null (get-field html-uri 
+                                                              (car next-chapters)))))
+             (end-page-count (car chapter-pair))
+             (last-uri (cdr chapter-pair)))
+        (gen-chapters-rec next-chapters last-uri end-page-count))))
+  (gen-chapters-rec chapters "/" 1))
 
 
 (define (generate-index chapters)
