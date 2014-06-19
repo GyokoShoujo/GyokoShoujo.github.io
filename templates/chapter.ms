@@ -9,6 +9,7 @@
     <link href="/static/css/gyoko.css" rel="stylesheet" type="text/css"/>
   </head>
   <body>
+    <div class="header"><a href="/"><img src="/static/images/header.png"/></a></div>
     <a href="{{ page1_uri }}">
       <img class="page-image" src="{{ cover_image_uri }}" />
     </a>
