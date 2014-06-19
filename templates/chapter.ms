@@ -4,7 +4,7 @@
     <meta charset="UTF-8"/>
     <meta name="author" content="Keroanne"/>
     <meta name="description" content="Gyoko Shoujo graphic novel">
-    <title>{{ chapter_title }}</title>
+    <title>Gyoko Shoujo - {{ chapter_title }}</title>
     <link href="http://fonts.googleapis.com/css?family=Crafty+Girls" rel="stylesheet" type="text/css"/>
     <link href="/static/css/gyoko.css" rel="stylesheet" type="text/css"/>
   </head>
