@@ -41,6 +41,14 @@
 (define image-directory-name (make-parameter "page-images"))
 (define thumbnail-directory-name (make-parameter "page-thumbnails"))
 
+(define (template-path name)
+  (let ((template_name (string-append
+                        (if (symbol? name) (symbol->string name) name) 
+                        ".ms")))
+    (build-path (site-content-path) "templates" template_name)))
+
+   
+
 (define chapter%
   (class object%
     (super-new)
@@ -77,7 +85,7 @@
       
       ;; Make sure pages are sorted before we start.
       (let ((current-pages (sorted-pages)))
-        (render-template (build-path (site-content-path) "templates/chapter.ms")
+        (render-template (template-path 'chapter)
                          html-file-dest
                          (hash "chapter_title" title
                                "page1_uri" (get-field html-uri 
@@ -171,7 +179,7 @@
       (make-thumbnail image thumbnail-dest)
       (let ((current-title (if (null? title) default-title title)))
         ;; todo: load markdown and include as content_markdown
-        (render-template (build-path (site-content-path) "templates/page.ms")
+        (render-template (template-path 'page)
                          html-file-dest
                          (hash "has_previous" (not (null? prev-uri))
                                "has_next" (not (null? next-uri))
