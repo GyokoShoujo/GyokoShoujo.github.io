@@ -316,8 +316,24 @@
 
 
 (define (generate-index chapters)
-  "todo: create root index.html from index.md and the list of chapters"
-  )
+  (debug "Generating main index page~n")
+  
+  (let ((chapter-list (map (λ (chapter) 
+                             (apply hash 
+                                    (flatten 
+                                     (map (λ (name)
+                                            (list name 
+                                                  (dynamic-get-field 
+                                                   (string->symbol name) 
+                                                   chapter)))
+                                          '("html-uri" "cover-thumbnail-uri" 
+                                            "number" "title")))))
+                           chapters)))
+    (render-template (template-path 'index)
+                     (build-path (site-output-path) "index.html")
+                     (hash "chapters" chapter-list
+                           "chapter1_uri" (get-field html-uri (car chapters))
+                           "content_markdown" ""))))
 
 (define (generate-markdown-pages)
   "todo: create html pages from markdown pages other than index.md"
