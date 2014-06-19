@@ -1,7 +1,6 @@
 #lang racket/base
 
-(require scribble/html
-         racket/class
+(require racket/class
          racket/string
          racket/file)
 
@@ -22,32 +21,16 @@
 (module+ test
   (require rackunit))
 
-#|
-
-> (require xml)
-> (write-xexpr '(html (body (h1 "Hallo"))))
-<html><body><h1>Hallo</h1></body></html>
-
-#lang at-exp racket/base
-> (require scribble/html)
-> (define (page name)
-  (output-xml
-   @html{@head{@title{@name}}
-         @body{@h1{@name}}}))
-> @page{foo}
-<html><head><title>hello</title></head><body><h1>hello</h1></body></html>
-|#
-
 (define image-directory-name (make-parameter "page-images"))
 (define thumbnail-directory-name (make-parameter "page-thumbnails"))
 
 (define (template-path name)
   (let ((template_name (string-append
-                        (if (symbol? name) (symbol->string name) name) 
+                        (if (symbol? name) (symbol->string name) name)
                         ".ms")))
     (build-path (site-content-path) "templates" template_name)))
 
-   
+
 
 (define chapter%
   (class object%
@@ -55,13 +38,13 @@
     ;; directory: path?, number: natural?, title: string?
     ;; find-pages?: boolean?
     (init-field directory number title)
-    
+
     (when (equal? (site-output-path) null)
         (error 'site "site-output-path needs to be parameterized before creating a chapter"))
 
     (define/public (add-page page)
       (set-field! pages this (cons page pages)))
-    
+
     (define/public (sorted-pages)
       (let ((sorted-pages (sort pages
                                 (λ (p1 p2) (< (get-field number p1)
@@ -77,18 +60,18 @@
       (when (null? pages)
         (raise-user-error 'site (string-append "Empty page list in chapter:"
                                                title)))
-      
-      (for-each make-directory* 
+
+      (for-each make-directory*
                 (list html-directory image-directory thumbnail-directory))
       (copy-directory/files cover-image (build-path image-directory cover-name))
       (make-thumbnail cover-image (build-path thumbnail-directory cover-name))
-      
+
       ;; Make sure pages are sorted before we start.
       (let ((current-pages (sorted-pages)))
         (render-template (template-path 'chapter)
                          html-file-dest
                          (hash "chapter_title" title
-                               "page1_uri" (get-field html-uri 
+                               "page1_uri" (get-field html-uri
                                                       (car current-pages))
                                "cover_image_uri" cover-image-uri
                                "content_markdown" ""))
@@ -98,15 +81,15 @@
               (cons page-count prev-uri)
               (let* ((next-pages (cdr page-list))
                      (cur-page (car page-list))
-                     (new-default-title (send cur-page generate 
+                     (new-default-title (send cur-page generate
                                               page-count default-title prev-uri
                                               (if (null? next-pages) next-chap-uri
                                                   (get-field html-uri (car next-pages))))))
                 (page-gen-rec (+ page-count 1) next-pages new-default-title
                               (get-field html-uri cur-page)))))
         (page-gen-rec page-count current-pages title html-uri)))
-          
-    
+
+
     (field [cover-image (build-path directory "Cover.png")]
            [pages null]
            [slug (slugify title)]
@@ -119,48 +102,48 @@
            [html-uri (string-append "/" slug)]
            [html-directory (build-path (site-output-path) slug)]
            [html-file-dest (build-path html-directory "index.html")]
-           [image-directory (build-path (site-output-path) "static" 
+           [image-directory (build-path (site-output-path) "static"
                                         slug (image-directory-name))]
-           [thumbnail-directory (build-path (site-output-path) "static" 
+           [thumbnail-directory (build-path (site-output-path) "static"
                                             slug (thumbnail-directory-name))]
            [cover-image-dest (build-path image-directory cover-name)]
            [cover-thumbnail-dest (build-path thumbnail-directory cover-name)]
            )
-    
+
     ))
 
 (module+ test
   ;; Test chapter% fields
   (check-true (equal? (site-output-path) null))
-  (check-exn exn:fail? 
+  (check-exn exn:fail?
              (lambda () (make-object chapter% (string->path "/thunk") 1 "I'm a failure?")))
   (site-output-path "/var/no")
-  (define test-chapter 
+  (define test-chapter
     (make-object chapter% (string->path "/tmp") 4 "I'm a chapter!"))
   (check-equal? (get-field slug test-chapter) "im-a-chapter")
   (check-equal? (get-field cover-name test-chapter) "im-a-chapter-cover.png")
-  (check-equal? (get-field markdown-file test-chapter) 
+  (check-equal? (get-field markdown-file test-chapter)
                 (string->path "/tmp/index.md"))
-  (check-equal? (get-field image-uri test-chapter) 
+  (check-equal? (get-field image-uri test-chapter)
                 "/static/im-a-chapter/page-images")
-  (check-equal? (get-field cover-image-uri test-chapter) 
+  (check-equal? (get-field cover-image-uri test-chapter)
                 "/static/im-a-chapter/page-images/im-a-chapter-cover.png")
-  (check-equal? (get-field thumbnail-uri test-chapter) 
+  (check-equal? (get-field thumbnail-uri test-chapter)
                 "/static/im-a-chapter/page-thumbnails")
-  (check-equal? (get-field cover-thumbnail-uri test-chapter) 
+  (check-equal? (get-field cover-thumbnail-uri test-chapter)
                 "/static/im-a-chapter/page-thumbnails/im-a-chapter-cover.png")
   (check-equal? (get-field html-uri test-chapter) "/im-a-chapter")
-  (check-equal? (get-field html-directory test-chapter) 
+  (check-equal? (get-field html-directory test-chapter)
                 (string->path "/var/no/im-a-chapter"))
-  (check-equal? (get-field html-file-dest test-chapter) 
+  (check-equal? (get-field html-file-dest test-chapter)
                 (string->path "/var/no/im-a-chapter/index.html"))
-  (check-equal? (get-field image-directory test-chapter) 
+  (check-equal? (get-field image-directory test-chapter)
                 (string->path "/var/no/static/im-a-chapter/page-images"))
-  (check-equal? (get-field thumbnail-directory test-chapter) 
+  (check-equal? (get-field thumbnail-directory test-chapter)
                 (string->path "/var/no/static/im-a-chapter/page-thumbnails"))
-  (check-equal? (get-field cover-image-dest test-chapter) 
+  (check-equal? (get-field cover-image-dest test-chapter)
                 (string->path "/var/no/static/im-a-chapter/page-images/im-a-chapter-cover.png"))
-  (check-equal? (get-field cover-thumbnail-dest test-chapter) 
+  (check-equal? (get-field cover-thumbnail-dest test-chapter)
                 (string->path "/var/no/static/im-a-chapter/page-thumbnails/im-a-chapter-cover.png"))
   )
 
@@ -170,7 +153,7 @@
     ;; chapter: chapter%?, image: path?, number: natural?, title: string?,
     ;; image was source in old Page class
     (init-field chapter image number title)
-    
+
     (define (stem-name suffix) (string-append stem "." suffix))
 
     (define/public (generate page-number default-title prev-uri next-uri)
@@ -191,14 +174,14 @@
                                "content_markdown" ""))
         current-title)
       )
-    
+
     (field [stem (string-append "page-" (number->string number))]
-           [html-uri (string-join (list (get-field html-uri chapter) 
+           [html-uri (string-join (list (get-field html-uri chapter)
                                         (stem-name "html")) "/")]
            [markdown-file (path-replace-suffix image ".md")]
-           [thumbnail-uri (string-join (list (get-field thumbnail-uri chapter) 
+           [thumbnail-uri (string-join (list (get-field thumbnail-uri chapter)
                                              (stem-name "png")) "/")]
-           [image-uri (string-join (list (get-field image-uri chapter) 
+           [image-uri (string-join (list (get-field image-uri chapter)
                                          (stem-name "png")) "/")]
            [html-file-dest (build-path (get-field html-directory chapter)
                                        (stem-name "html"))]
@@ -206,42 +189,42 @@
                                        (stem-name "png"))]
            [image-dest (build-path (get-field image-directory chapter)
                                    (stem-name "png"))])
-    
+
     (send chapter add-page this)))
 
 (module+ test
   ;; Test page% fields
   (site-output-path "/var/no")
-  (define the-chapter 
+  (define the-chapter
     (make-object chapter% (string->path "/tmp") 6 "A short chapter"))
   (define p
     (make-object page% the-chapter (build-path "/tmp/6 - A short chapter/1.png") 1
                  "One's Title"))
   (check-equal? (get-field chapter p) the-chapter)
-  (check-equal? (get-field image p) 
+  (check-equal? (get-field image p)
                 (string->path "/tmp/6 - A short chapter/1.png"))
   (check-equal? (get-field number p) 1)
   (check-equal? (get-field title p) "One's Title")
   (check-equal? (get-field stem p) "page-1")
   (check-equal? (get-field html-uri p) "/a-short-chapter/page-1.html")
-  (check-equal? (get-field markdown-file p) 
+  (check-equal? (get-field markdown-file p)
                 (string->path "/tmp/6 - A short chapter/1.md"))
-  (check-equal? (get-field thumbnail-uri p) 
+  (check-equal? (get-field thumbnail-uri p)
                 "/static/a-short-chapter/page-thumbnails/page-1.png")
   (check-equal? (get-field image-uri p)
                 "/static/a-short-chapter/page-images/page-1.png")
-  (check-equal? (get-field html-file-dest p) 
+  (check-equal? (get-field html-file-dest p)
                 (string->path "/var/no/a-short-chapter/page-1.html"))
-  (check-equal? (get-field thumbnail-dest p) 
+  (check-equal? (get-field thumbnail-dest p)
                 (string->path "/var/no/static/a-short-chapter/page-thumbnails/page-1.png"))
-  (check-equal? (get-field image-dest p) 
+  (check-equal? (get-field image-dest p)
                 (string->path "/var/no/static/a-short-chapter/page-images/page-1.png"))
   )
 
 (module+ test
   ;; Make sure that page insertion into chapters works as expected
   (site-output-path "/var/no")
-  (define a-chapter 
+  (define a-chapter
     (make-object chapter% (string->path "/tmp") 5 "For the page!"))
   (define page-1
     (make-object page% a-chapter (build-path "/tmp/5 - For the page!/1.png") 1 ""))
@@ -256,7 +239,7 @@
   (check-equal? (get-field stem (caddr (send a-chapter sorted-pages))) "page-3"))
 
 (define (generate-site)
-  (info "Generating site in ~v using source ~v~n" 
+  (info "Generating site in ~v using source ~v~n"
          (site-output-path) (site-content-path))
   (test-path-invariants)
   (let ((chapters (build-chapters)))
@@ -270,20 +253,20 @@
 (define (build-chapters)
   (let ((chapter-path (build-path (site-content-path) "content")))
     (sort (for/list ([test-dir (in-list (directory-list chapter-path))]
-                     #:when (regexp-match? #rx"([0-9]+) - (.+)" 
+                     #:when (regexp-match? #rx"([0-9]+) - (.+)"
                                            (path->string test-dir)))
-            (let* ((chapter-info (regexp-match #rx"([0-9]+) - (.+)" 
+            (let* ((chapter-info (regexp-match #rx"([0-9]+) - (.+)"
                                                (path->string test-dir)))
                    (chapter-dir  (build-path chapter-path test-dir))
                    (chapter-num  (string->number (cadr chapter-info)))
                    (title        (caddr chapter-info))
-                   (chapter      (new chapter% 
+                   (chapter      (new chapter%
                                       (directory chapter-dir)
                                       (number    chapter-num)
                                       (title     title))))
               (build-pages-for-chapter chapter)
               chapter))
-          (λ (c1 c2) 
+          (λ (c1 c2)
             (< (get-field number c1) (get-field number c2))))))
 
 
@@ -292,14 +275,14 @@
                                              #:build? #t))]
              #:when (regexp-match #px".*/(\\d+)( - ([^/]+?))?\\.png$"
                                   (path->string image)))
-    (let* ((file-info   (regexp-match #px".*/(\\d+)( - ([^/]+?))?\\.png$" 
+    (let* ((file-info   (regexp-match #px".*/(\\d+)( - ([^/]+?))?\\.png$"
                                       (path->string image)))
            (page-number (string->number (cadr file-info)))
            (title       (if (cadddr file-info) (cadddr file-info) null)))
-      (new page% 
-           (chapter chapter) (image image) 
+      (new page%
+           (chapter chapter) (image image)
            (number page-number) (title title)))))
-  
+
 
 (define (generate-chapters chapters)
   (define (gen-chapters-rec chapter-list prev-uri page-count)
@@ -307,7 +290,7 @@
       (let* ((next-chapters (cdr chapter-list))
              (chapter-pair (send (car chapter-list) generate page-count
                                  prev-uri (if (null? next-chapters)
-                                              null (get-field html-uri 
+                                              null (get-field html-uri
                                                               (car next-chapters)))))
              (end-page-count (car chapter-pair))
              (last-uri (cdr chapter-pair)))
@@ -317,16 +300,16 @@
 
 (define (generate-index chapters)
   (debug "Generating main index page~n")
-  
-  (let ((chapter-list (map (λ (chapter) 
-                             (apply hash 
-                                    (flatten 
+
+  (let ((chapter-list (map (λ (chapter)
+                             (apply hash
+                                    (flatten
                                      (map (λ (name)
-                                            (list name 
-                                                  (dynamic-get-field 
-                                                   (string->symbol name) 
+                                            (list name
+                                                  (dynamic-get-field
+                                                   (string->symbol name)
                                                    chapter)))
-                                          '("html-uri" "cover-thumbnail-uri" 
+                                          '("html-uri" "cover-thumbnail-uri"
                                             "number" "title")))))
                            chapters)))
     (render-template (template-path 'index)
@@ -336,6 +319,8 @@
                            "content_markdown" ""))))
 
 (define (generate-markdown-pages)
+  ;; Generates static html pages in the content root from markdown
+  ;; (e.g. 404.md -> 404.html)
   "todo: create html pages from markdown pages other than index.md"
   )
 
@@ -353,4 +338,3 @@
   (unless (directory-exists? (site-content-path))
     (error "Content path doesn't exist: " (site-content-path)))
   )
-
