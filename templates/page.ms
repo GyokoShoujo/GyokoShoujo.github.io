@@ -10,16 +10,16 @@
   </head>
   <body>
     <div class="header"><a href="/"><img src="/static/images/header.png"/></a></div>
-    {{# has_next }}<a href="{{ next_uri }}">{{/ has_next }}
+    {{# has_next? }}<a href="{{ next_uri }}">{{/ has_next? }}
     <img class="page-image" src="{{ image_uri }}" />
-    {{# has_next }}</a>{{/ has_next }}
+    {{# has_next? }}</a>{{/ has_next? }}
     <div class="main-content">
     {{& content_markdown }}
     </div>
     <div class="pager-footer">
-      {{# has_previous }}<a href="{{ previous_uri }}"> ≪ </a>{{/ has_previous }}
+      {{# has_previous? }}<a href="{{ previous_uri }}"> ≪ </a>{{/ has_previous? }}
       Page {{ page_number }}
-      {{# has_next }}<a href="{{ next_uri }}"> ≫ </a>{{/ has_next }}
+      {{# has_next? }}<a href="{{ next_uri }}"> ≫ </a>{{/ has_next? }}
     </div>
   </body>
   <script>

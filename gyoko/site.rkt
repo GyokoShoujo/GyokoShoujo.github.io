@@ -165,8 +165,8 @@
         ;; todo: load markdown and include as content_markdown
         (render-template (template-path 'page)
                          html-file-dest
-                         (hash "has_previous" (not (null? prev-uri))
-                               "has_next" (not (null? next-uri))
+                         (hash "has_previous?" (not (null? prev-uri))
+                               "has_next?" (not (null? next-uri))
                                "previous_uri" prev-uri
                                "next_uri" next-uri
                                "image_uri" image-uri
