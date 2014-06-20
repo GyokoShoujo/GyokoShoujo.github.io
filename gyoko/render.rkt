@@ -1,8 +1,12 @@
 #lang racket/base
 
+(require racket/string
+         markdown)
+
 (require "logger.rkt")
 
-(provide render-template)
+(provide render-template
+         render-markdown)
 
 (define template-cache (make-hash))
 
@@ -16,3 +20,8 @@
                             (let ((render (hash-ref template-cache src-path)))
                               (render variable-hash port)))
                           #:mode 'text #:exists 'error))
+
+(define (render-markdown src-path)
+  ;; Renders a markdown file to a string
+  (string-join (map xexpr->string (parse-markdown src-path))
+               (make-string 1 #\newline)))
