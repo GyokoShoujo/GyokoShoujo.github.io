@@ -13,7 +13,7 @@
       <img class="page-image" src="/static/images/Cover.png"/>
     </a>
     <div class="main-content">
-    {{ content_markdown }}
+    {{& content_markdown }}
     </div>
     <h2>Chapters</h2>
     <table class="chapter-links">

@@ -14,7 +14,7 @@
       <img class="page-image" src="{{ cover_image_uri }}" />
     </a>
     <div class="main-content">
-    {{ content_markdown }}
+    {{& content_markdown }}
     </div>
     <div class="pager-footer">
       <a href="{{ page1_uri }}">{{ chapter_title }}</a>
