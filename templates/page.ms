@@ -14,7 +14,7 @@
     <img class="page-image" src="{{ image_uri }}" />
     {{# has_next }}</a>{{/ has_next }}
     <div class="main-content">
-    {{ content_markdown }}
+    {{& content_markdown }}
     </div>
     <div class="pager-footer">
       {{# has_previous }}<a href="{{ previous_uri }}"> ≪ </a>{{/ has_previous }}
