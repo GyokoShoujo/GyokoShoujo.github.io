@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/class
+         racket/list
          racket/string
          racket/file)
 
@@ -321,8 +322,16 @@
 (define (generate-markdown-pages)
   ;; Generates static html pages in the content root from markdown
   ;; (e.g. 404.md -> 404.html)
-  "todo: create html pages from markdown pages other than index.md"
-  )
+  (let ((source-dir (build-path (site-content-path) "content")))
+    (for ([content-file (in-list (directory-list source-dir))]
+          #:when (regexp-match #rx".*.md$" (path->string content-file)))
+    (debug "Rendering static file: ~s~n" content-file)
+    (let ((content (render-markdown (build-path source-dir content-file))))
+      (render-template (template-path 'content)
+                       (build-path (site-output-path)
+                                   (path-replace-suffix content-file ".html"))
+                       (hash "content_markdown" content))))))
+
 
 (define (copy-static-files)
   (copy-directory/files (build-path (site-content-path) "static")
