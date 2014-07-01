@@ -17,9 +17,9 @@
     {{& content_markdown }}
     </div>
     <div class="pager-footer">
-      {{# has_previous? }}<a href="{{ previous_uri }}"> ≪ </a>{{/ has_previous? }}
+      {{# has_previous? }}<a href="{{ previous_uri }}">≪</a>{{/ has_previous? }}
       Page {{ page_number }}
-      {{# has_next? }}<a href="{{ next_uri }}"> ≫ </a>{{/ has_next? }}
+      {{# has_next? }}<a href="{{ next_uri }}">≫</a>{{/ has_next? }}
     </div>
   </body>
   <script>
