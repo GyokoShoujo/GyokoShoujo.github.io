@@ -102,8 +102,8 @@ copied directly to the output's static directory.
               #:once-each
               [("--branch")   b  "Branch to commit to <master>"    (branch b)  ]
               [("--remote")   r  "Remote repo to push to <origin>" (remote r)  ]
-              [("--no-commit")   "Don't commit changes"            (commit? #f)]
-              [("--no-push")     "Don't push changes"   (push? #f) (commit? #f)]
+              [("--no-push")     "Don't push changes"              (push? #f)  ]
+              [("--no-commit")   "Don't commit changes" (push? #f) (commit? #f)]
               #:once-any
               [("-v" "--verbose") "Be more verbose"  (log-level 1)]
               [("-d" "--debug")   "Be extra verbose" (log-level 2)])
