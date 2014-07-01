@@ -119,5 +119,7 @@ copied directly to the output's static directory.
 
 (checkout-site (branch))
 (generate-site)
-(when (commit?)
-  (commit-site))
+(when (and (commit?) (did-site-change?))
+  (commit-site)
+  (when (push?)
+    (push-site (remote) (branch))))
