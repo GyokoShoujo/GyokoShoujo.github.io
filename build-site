@@ -115,6 +115,7 @@ copied directly to the output's static directory.
 (site-output-path (build-git))
 
 (debug "Using local git repo in: ~s~n" (local-git))
+(debug "Generating site in: ~s~n" (site-output-path))
 
 (checkout-site (branch))
 (generate-site)
