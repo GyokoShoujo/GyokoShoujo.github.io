@@ -20,12 +20,12 @@
 
 
 (define (find-git-base path)
-  (if (directory-exists? (build-path path ".git"))
-      path
-      (if (string=? (path->string path) "/")
-          (raise-user-error 'git 
-                            "unable to find local git directory")
-          (find-git-base (simplify-path (build-path path ".."))))))
+  (cond [(directory-exists? (build-path path ".git"))
+         path]
+        [(member path (filesystem-root-list))
+         (raise-user-error 'git "unable to find local git directory")]
+        [else
+         (find-git-base (simplify-path (build-path path "..")))]))
 
 ;; local-git is the git repository we are contained within.
 ;; It is the source used to pull from.
@@ -39,18 +39,17 @@
 (define working-git (make-parameter (local-git)))
 
 (define (git command . arg-list)
-  (let* ((full-args (append (list #"-C" (working-git) command)
-                            (if (> (log-level) 1)
-                                (remove #"--quiet" arg-list)
-                                arg-list)))
-         (stdout-ob (open-output-bytes))
-         (stderr-ob (open-output-bytes))
-         (stdin-ib  (open-input-bytes #""))
-         (exit-code (parameterize ((current-output-port stdout-ob)
-                                   (current-error-port  stderr-ob)
-                                   (current-input-port  stdin-ib))
-                      (apply system*/exit-code
-                             (find-executable-path "git") full-args)))
+  (let* ((full-args    (append
+                        (list #"-C" (working-git) command)
+                        (if (> (log-level) INFO) (remove #"--quiet" arg-list) arg-list)))
+         (stdout-ob    (open-output-bytes))
+         (stderr-ob    (open-output-bytes))
+         (stdin-ib     (open-input-bytes #""))
+         (git-exe      (find-executable-path "git"))
+         (exit-code    (parameterize ((current-output-port stdout-ob)
+                                      (current-error-port  stderr-ob)
+                                      (current-input-port  stdin-ib))
+                         (apply system*/exit-code git-exe full-args)))
          (stdout-lines (clean-output (get-output-bytes stdout-ob)))
          (stderr-lines (clean-output (get-output-bytes stderr-ob))))
       (if (zero? exit-code)

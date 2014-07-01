@@ -24,10 +24,9 @@
   (when (<= level (log-level))
     (apply printf params)))
 (define (log-lines level lines)
-  (when (not (zero? (length lines)))
-      (begin
-        (logger level "~s~n" (car lines))
-        (log-lines level (cdr lines)))))
+  (when (not (null? lines))
+    (logger level "~s~n" (car lines))
+    (log-lines level (cdr lines))))
       
 (define (message msg . params) (apply logger MESSAGE msg params))
 (define (info    msg . params) (apply logger INFO msg params))
