@@ -195,7 +195,7 @@
   (define the-chapter
     (make-object chapter% (string->path "/tmp") 6 "A short chapter"))
   (define p
-    (make-object page% the-chapter (path/ "tmp" / "6 - A short chapter" / "1.png") 
+    (make-object page% the-chapter (path/ "tmp" / "6 - A short chapter" / "1.png")
                  1 "One's Title"))
   (check-equal? (get-field chapter p) the-chapter)
   (check-equal? (get-field image p)
@@ -302,7 +302,8 @@
 
   (define (generate-chapter-hash chapter)
     (apply hash (flatten (map
-                          (λ (name) (list name (dynamic-get-field name chapter)))
+                          (λ (name) (list (string-replace (symbol->string name) "-" "_")
+                                          (dynamic-get-field name chapter)))
                           '(html-uri cover-thumbnail-uri number title)))))
   (let ((chapter-list (map generate-chapter-hash chapters)))
     (render-template (template-path 'index)
