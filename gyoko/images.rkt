@@ -1,18 +1,30 @@
 #lang racket/base
 
-(require racket/draw 
-         racket/class
-         file/convertible)
+(require racket/string
+         racket/system)
+
+(require "logger.rkt")
 
 (provide make-thumbnail)
 
 (define (make-thumbnail source destination [width 200])
-  (let* ((src-bmp  (make-object bitmap% source 'png #f #t))
-         (scale    (/ width (send src-bmp get-width)))
-         (dest-bmp (make-bitmap width (round (* scale (send src-bmp get-height)))))
-         (dc       (new bitmap-dc% [bitmap dest-bmp])))
-    (send dc set-scale scale scale)
-    (send dc draw-bitmap src-bmp 0 0)
-    (define out-bytes (convert dest-bmp 'png-bytes))
-    (with-output-to-file destination (lambda () (display out-bytes))
-                         #:mode 'binary #:exists 'truncate/replace)))
+  (let ((stdout-ob    (open-output-bytes))
+        (stderr-ob    (open-output-bytes)))
+    (parameterize ((current-output-port stdout-ob)
+                   (current-error-port  stderr-ob))
+      (unless (system* (find-executable-path "convert")
+                       (path->string source)
+                       "-filter" "Catrom"
+                       "-resize" (string-append (number->string width) "x")
+                       "-unsharp" "0x.6+0.5+0"
+                       (path->string destination))
+        (info "Make thumbnail failed for ~s~n" source)
+        (debug "STDOUT:")
+        (debug "~s~n" (string-split
+                       (string-replace (bytes->string/locale stdout-ob) "\t" "    ")
+                       "\n"))
+        (debug "STDERR:")
+        (debug "~s~n" (string-split
+                       (string-replace (bytes->string/locale stderr-ob) "\t" "    ")
+                       "\n"))
+        (raise-user-error 'images "resizing image ~s failed.~n" source)))))
