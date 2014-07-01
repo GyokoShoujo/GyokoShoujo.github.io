@@ -12,9 +12,12 @@
 (provide build-git
          checkout-site
          commit-site
+         did-site-change?
          find-git-base
          git-status
-         local-git)
+         local-git
+         push-site
+         working-git)
 
 (define (clean-output bytes)
   (string-split
@@ -105,3 +108,17 @@
                                      (date->string (current-date) #t))))
       (git #"add" #"--all")
       (git #"commit" #"--quiet" (string-join (list "--message" commit-msg) "=")))))
+
+;; Push the build git repo to its remote
+(define (push-site remote branch)
+  (debug "Pushing site in ~v to ~v ~v (through local repo)~n"
+         (build-git) remote branch)
+  (parameterize ((working-git (build-git)))
+    (git #"push" #"--quiet" #"origin" branch))
+  (parameterize ((working-git (local-git)))
+    (git #"push" #"--quiet" remote (string-join (list branch branch) ":"))))
+
+;; Tests if there were any changes to the generated site
+(define (did-site-change?)
+  (parameterize ((working-git (build-git)))
+    (not (null? (car (git #"status" #"--porcelain"))))))
