@@ -1,18 +1,20 @@
 #lang racket/base
 
-(require racket/system
+(require racket/date
+         racket/file
          racket/format
          racket/string
-         racket/file)
+         racket/system)
 
 (require "logger.rkt"
          "paths.rkt")
 
-(provide local-git
-         build-git
-         find-git-base
+(provide build-git
          checkout-site
-         git-status)
+         commit-site
+         find-git-base
+         git-status
+         local-git)
 
 (define (clean-output bytes)
   (string-split
@@ -94,3 +96,12 @@
     (make-directory (working-git))
     (git #"clone" #"--quiet" #"--branch" branch (local-git) #".")
     (clear-checkout-tree)))
+
+;; Commit the build git repository
+(define (commit-site)
+  (debug "committing site in ~s~n" (build-git))
+  (parameterize ((working-git (build-git)))
+    (let ((commit-msg (string-append "Site generated "
+                                     (date->string (current-date) #t))))
+      (git #"add" #"--all")
+      (git #"commit" #"--quiet" (string-join (list "--message" commit-msg) "=")))))
