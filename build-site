@@ -118,3 +118,5 @@ copied directly to the output's static directory.
 
 (checkout-site (branch))
 (generate-site)
+(when (commit?)
+  (commit-site))
