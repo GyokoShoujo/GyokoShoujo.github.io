@@ -20,12 +20,12 @@
     {{# chapters }}
       <tr class="chapter-link">
         <td class="thumbnail">
-          <a href="{{ html-uri }}">
-            <img class="page-thumbnail" src="{{ cover-thumbnail-uri }}" />
+          <a href="{{ html_uri }}">
+            <img class="page-thumbnail" src="{{ cover_thumbnail_uri }}" />
           </a>
         </td>
         <td class="title">
-          <a href="{{ html-uri }}">{{ number }}. {{ title }}</a>
+          <a href="{{ html_uri }}">{{ number }}. {{ title }}</a>
         </td>
       </tr>
     {{/ chapters }}
