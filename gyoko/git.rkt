@@ -5,7 +5,8 @@
          racket/string
          racket/file)
 
-(require "logger.rkt")
+(require "logger.rkt"
+         "paths.rkt")
 
 (provide local-git
          build-git
@@ -19,13 +20,13 @@
    "\n"))
 
 
-(define (find-git-base path)
-  (cond [(directory-exists? (build-path path ".git"))
-         path]
-        [(member path (filesystem-root-list))
+(define (find-git-base test-path)
+  (cond [(directory-exists? (path test-path / ".git"))
+         test-path]
+        [(member test-path (filesystem-root-list))
          (raise-user-error 'git "unable to find local git directory")]
         [else
-         (find-git-base (simplify-path (build-path path "..")))]))
+         (find-git-base (path test-path / ".."))]))
 
 ;; local-git is the git repository we are contained within.
 ;; It is the source used to pull from.
@@ -83,7 +84,7 @@
           #:when (memf (λ (arg) (not (string=? (path->string f) arg)))
                        (list ".git")))
       (debug "Removing ~s~n" f)
-      (delete-directory/files (build-path (build-git) f))))
+      (delete-directory/files (path (build-git) / f))))
   (debug "testing that local repository is up to date~n")
   (parameterize ((working-git (local-git)))
     (when (not (local-up-to-date? branch))
