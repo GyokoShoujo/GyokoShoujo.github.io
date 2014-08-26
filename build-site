@@ -87,7 +87,8 @@ copied directly to the output's static directory.
 #lang racket/base
 
 (require racket/cmdline
-         racket/format)
+         racket/format
+         racket/file)
 
 (require "gyoko/git.rkt"
          "gyoko/logger.rkt"
@@ -97,6 +98,11 @@ copied directly to the output's static directory.
 (define remote    (make-parameter "origin"))
 (define commit?   (make-parameter #t))
 (define push?     (make-parameter #t))
+(define clean-up? (make-parameter #t))
+
+(define (setup-debug)
+  (log-level 2)
+  (clean-up? #f))
 
 (command-line #:program "build-site"
               #:once-each
@@ -106,7 +112,7 @@ copied directly to the output's static directory.
               [("--no-commit")   "Don't commit changes" (push? #f) (commit? #f)]
               #:once-any
               [("-v" "--verbose") "Be more verbose"  (log-level 1)]
-              [("-d" "--debug")   "Be extra verbose" (log-level 2)])
+              [("-d" "--debug")   "Be extra verbose and don't clean up" (setup-debug)])
 
 (local-git (find-git-base (find-system-path 'run-file)))
 (build-git (build-path (find-system-path 'temp-dir)
@@ -123,3 +129,6 @@ copied directly to the output's static directory.
   (commit-site)
   (when (push?)
     (push-site (remote) (branch))))
+(when (clean-up?)
+  (delete-directory/files (build-git)))
+(message "Site generate successfully.")
