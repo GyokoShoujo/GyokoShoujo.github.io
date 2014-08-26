@@ -71,14 +71,14 @@ This would output a site that looks like this:
 The html is generated from templates in the template directory. The following
 templates are used:
 
-content.jinja:    Generic template for markdown files in the content directory.
-<name>.jinja:     Page-specific template for a file in the content directory.
-                  In this examples, "index.jinja" could be used for index.md.
-toc.jinja:        Renders the table of contents.
-chapter.jinja:    Renders thumbnails of a chapter's pages.
-page.jinja:       Renders a page (one image) from a chapter.
-blog-index.jinja: Renders the blog index.
-glog-page.jinja:  Renders a single article for the blog.
+content.ms:    Generic template for markdown files in the content directory.
+<name>.ms:     Page-specific template for a file in the content directory.
+               In this examples, "index.ms" could be used for index.md.
+toc.ms:        Renders the table of contents.
+chapter.ms:    Renders thumbnails of a chapter's pages.
+page.ms:       Renders a page (one image) from a chapter.
+blog-index.ms: Renders the blog index.
+glog-page.ms:  Renders a single article for the blog.
 
 Images, CSS files and the like belong in the static directory and will be
 copied directly to the output's static directory.
