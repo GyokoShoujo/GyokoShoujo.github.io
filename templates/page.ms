@@ -7,9 +7,35 @@
     <title>Gyoko Shoujo - {{ page_title }} (page {{ page_number }})</title>
     <link href="http://fonts.googleapis.com/css?family=Crafty+Girls" rel="stylesheet" type="text/css"/>
     <link href="/static/css/gyoko.css" rel="stylesheet" type="text/css"/>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="/static/js/gyoko.js"></script>
   </head>
   <body>
     <div class="header"><a href="/"><img src="/static/images/header.png"/></a></div>
+    <div class="nav-selector">
+      {{# has_previous? }}
+      <a href="{{ previous_uri }}">≪</a>
+      |
+      {{/ has_previous? }}
+      Page:
+      <select class="nav-select">
+        {{# has_prev_chapter_uri? }}
+        <option value="{{ prev_chapter_uri }}">Previous Chapter</option>
+        {{/ has_prev_chapter_uri? }}
+        {{# pages_list }}
+        <option {{# selected_page? }}selected{{/ selected_page? }}
+                value="{{ html_uri }}">{{ page_number }}</option>
+        {{/ pages_list }}
+        {{# has_next_chapter_uri? }}
+        <option value="{{ next_chapter_uri }}">Next Chapter</option>
+        {{/ has_next_chapter_uri? }}
+      </select>
+      <input class="nav-go" type="button" onclick="nav_click();" value="Go" />
+      {{# has_next? }}
+      |
+      <a href="{{ next_uri }}">≫</a>
+      {{/ has_next? }}
+    </div>
     {{# has_next? }}<a href="{{ next_uri }}">{{/ has_next? }}
     <img class="page-image" src="{{ image_uri }}" />
     {{# has_next? }}</a>{{/ has_next? }}

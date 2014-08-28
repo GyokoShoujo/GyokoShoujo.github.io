@@ -7,8 +7,19 @@
     <title>Gyoko Shoujo</title>
     <link href="http://fonts.googleapis.com/css?family=Crafty+Girls" rel="stylesheet" type="text/css"/>
     <link href="/static/css/gyoko.css" rel="stylesheet" type="text/css"/>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="/static/js/gyoko.js"></script>
   </head>
   <body>
+    <div class="nav-selector">
+      Chapter:
+      <select class="nav-select">
+        {{# chapters }}
+        <option value="{{ cover_uri }}">{{ number }}. {{ title }}</option>
+        {{/ chapters }}
+      </select>
+      <input class="nav-go" type="button" onclick="nav_click();" value="Go" />
+    </div>
     <a href="{{ chapter1_uri }}">
       <img class="page-image" src="/static/images/Cover.png"/>
     </a>

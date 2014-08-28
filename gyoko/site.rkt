@@ -31,6 +31,25 @@
          (string-append (if (symbol? name) (symbol->string name) name) ".ms")))
     (path (site-content-path) / "templates" / template_name)))
 
+(define (generate-object-hash obj attrs)
+  (let ((h (make-hash)))
+    (map
+     (λ (name)
+       (let ((key   (string-replace (symbol->string name) "-" "_"))
+             (value (if (null? (dynamic-get-field name obj))
+                        ""
+                        (dynamic-get-field name obj))))
+         (hash-set! h key value)))
+     attrs)
+    h))
+
+(define (generate-chapter-hash chapter)
+  (generate-object-hash chapter
+                        '(cover-uri cover-thumbnail-uri number title)))
+
+(define (generate-page-hash page)
+  (generate-object-hash page
+                        '(thumbnail-uri html-uri image-uri page-number title)))
 
 (define chapter%
   (class object%
@@ -66,24 +85,37 @@
       (make-thumbnail cover-image (path thumbnail-directory / cover-name))
 
       ;; Make sure pages are sorted before we start.
-      (let ((current-pages (sorted-pages)))
+      (debug "Sorting pages and generating page hashes from them.~n")
+      (let* ((current-pages (sorted-pages))
+             (page-hash-list (map (λ (p) (generate-page-hash p))
+                                  current-pages)))
+        (debug "Rendering the chapter cover.~n")
         (render-template (template-path 'chapter) html-file-dest
                          (hash "chapter_title" title
                                "page1_uri" (get-field html-uri (car current-pages))
                                "cover_image_uri" cover-image-uri
+                               "pages_list" page-hash-list
+                               "has_prev_chapter_uri?" (not (null? prev-chap-uri))
+                               "has_next_chapter_uri?" (not (null? next-chap-uri))
+                               "prev_chapter_uri" prev-chap-uri
+                               "next_chapter_uri" next-chap-uri
                                "content_markdown" ""))
 
-        (define (page-gen-rec page-count page-list default-title prev-uri)
+        (define (page-gen-rec cur-page-count page-list default-title prev-uri)
           (if (null? page-list)
-              (cons page-count prev-uri)
+              (cons cur-page-count prev-uri)
               (let* ((next-pages        (cdr page-list))
                      (cur-page          (car page-list))
                      (next-uri          (if (null? next-pages) next-chap-uri
                                             (get-field html-uri (car next-pages))))
                      (new-default-title (send cur-page generate
-                                              default-title prev-uri next-uri)))
-                (page-gen-rec (+ page-count 1) next-pages new-default-title
+                                              default-title page-count
+                                              page-hash-list
+                                              prev-uri next-uri
+                                              prev-chap-uri next-chap-uri)))
+                (page-gen-rec (+ cur-page-count 1) next-pages new-default-title
                               (get-field html-uri cur-page)))))
+        (debug "Starting to generate pages.~n")
         (page-gen-rec page-count current-pages title cover-uri)))
 
 
@@ -163,12 +195,16 @@
 
     (define (stem-name suffix)   (string-append stem "." suffix))
 
-    (define/public (generate default-title prev-uri next-uri)
+    (define/public (generate default-title prev-page-count chapter-page-list
+                             prev-uri next-uri prev-chap-uri next-chap-uri)
       (info "  page: ~s~n" page-number)
       (copy-directory/files image image-dest)
       (make-thumbnail image thumbnail-dest)
-      (let ((current-title (if (null? title) default-title title)))
+      (let ((current-title (if (null? title) default-title title))
+            (cur-page-hash (list-ref chapter-page-list
+                                     (- page-number prev-page-count))))
         ;; todo: load markdown and include as content_markdown
+        (hash-set! cur-page-hash "selected_page?" #t)
         (render-template (template-path 'page) html-file-dest
                          (hash "has_previous?" (not (null? prev-uri))
                                "has_next?" (not (null? next-uri))
@@ -177,7 +213,13 @@
                                "image_uri" image-uri
                                "page_title" current-title
                                "page_number" page-number
+                               "pages_list" chapter-page-list
+                               "has_prev_chapter_uri?" (not (null? prev-chap-uri))
+                               "has_next_chapter_uri?" (not (null? next-chap-uri))
+                               "prev_chapter_uri" prev-chap-uri
+                               "next_chapter_uri" next-chap-uri
                                "content_markdown" ""))
+        (hash-remove! cur-page-hash "selected_page?")
         current-title))
 
     (field [stem           (string-append "page-" (number->string page-number))]
@@ -315,11 +357,6 @@
 (define (generate-table-of-contents chapters)
   (info "Generating table of contents page~n")
 
-  (define (generate-chapter-hash chapter)
-    (apply hash (flatten (map
-                          (λ (name) (list (string-replace (symbol->string name) "-" "_")
-                                          (dynamic-get-field name chapter)))
-                          '(cover-uri cover-thumbnail-uri number title)))))
   (let ((chapter-list (map generate-chapter-hash chapters)))
     (render-template (template-path 'index)
                      (path (site-output-path) / "index.html")
@@ -341,7 +378,7 @@
 
 
 (define (copy-static-files)
-  (info "Copying static files")
+  (info "Copying static files~n")
   (copy-file (path (site-content-path) / "CNAME")
              (path (site-output-path) / "CNAME"))
   (copy-directory/files (path (site-content-path) / "static")

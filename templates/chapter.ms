@@ -7,9 +7,32 @@
     <title>Gyoko Shoujo - {{ chapter_title }}</title>
     <link href="http://fonts.googleapis.com/css?family=Crafty+Girls" rel="stylesheet" type="text/css"/>
     <link href="/static/css/gyoko.css" rel="stylesheet" type="text/css"/>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="/static/js/gyoko.js"></script>
   </head>
   <body>
     <div class="header"><a href="/"><img src="/static/images/header.png"/></a></div>
+    <div class="nav-selector">
+      {{# has_prev_chapter_uri? }}
+      <a href="{{ prev_chapter_uri }}">≪</a>
+      |
+      {{/ has_prev_chapter_uri? }}
+      Page:
+      <select class="nav-select">
+        {{# has_prev_chapter_uri? }}
+        <option value="{{ prev_chapter_uri }}">Previous Chapter</option>
+        {{/ has_prev_chapter_uri? }}
+        {{# pages_list }}
+        <option value="{{ html_uri }}">{{ page_number }}</option>
+        {{/ pages_list }}
+        {{# has_next_chapter_uri? }}
+        <option value="{{ next_chapter_uri }}">Next Chapter</option>
+        {{/ has_next_chapter_uri? }}
+      </select>
+      <input class="nav-go" type="button" onclick="nav_click();" value="Go" />
+      |
+      <a href="{{ page1_uri }}">≫</a>
+    </div>
     <a href="{{ page1_uri }}">
       <img class="page-image" src="{{ cover_image_uri }}" />
     </a>
