@@ -20,12 +20,12 @@ a:hover   { color: #ffb2fe }
 img.page-image     { box-shadow: 10px 10px 5px #888888; border: solid 1px #df2e2e; width: 753px; }
 img.page-thumbnail { box-shadow: 4px 4px 2px #888888;   border: solid 1px #df2e2e; }
 
-.header     { margin-bottom: 1em; width: 753px;  }
+.header     { margin-bottom: 0.3em; width: 753px;  }
 .header img { margin-left: 25px;  width: 702px;  }
 
 table.chapter-links              { width: 753px;      border: none;      }
 table.chapter-links td           { padding: 8px;      font-size: 2em;    vertical-align: top; }
-table.chapter-links td > a, 
+table.chapter-links td > a,
 table.chapter-links td > a:link    { color: #ff93fe; text-decoration: none; }
 table.chapter-links td > a:visited { color: #cc76cb; text-decoration: none; }
 table.chapter-links td > a:hover   { color: #ffb2fe; text-decoration: none; }
@@ -34,3 +34,5 @@ table.chapter-links td.thumbnail { width: 200px;      margin: 0;                
 table.chapter-links td.title     { margin-left: 32px; padding-top: 32px;                      }
 
 .pager-footer  { width: 753px; text-align: center; }
+
+.nav-selector { width: 753px; font-size: 0.5em; text-align: right; }
