@@ -131,4 +131,5 @@ copied directly to the output's static directory.
     (push-site (remote) (branch))))
 (when (clean-up?)
   (delete-directory/files (build-git)))
-(message "Site generate successfully.")
+(message "Site generate successfully.~n")
+(exit 0)
