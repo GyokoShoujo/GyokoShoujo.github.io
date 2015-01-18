@@ -36,3 +36,5 @@ table.chapter-links td.title     { margin-left: 32px; padding-top: 32px;        
 .pager-footer  { width: 753px; text-align: center; }
 
 .nav-selector { width: 753px; font-size: 0.5em; text-align: right; }
+
+#disqus_thread { width: 753px; margin-top: 36px; }
