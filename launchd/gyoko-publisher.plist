@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.gyokoshojo.publisher</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/home/travis/src/gyoko/launchd/publisher</string>
+    </array>
+    <key>StandardOutPath</key>
+    <string>/Users/travis/src/gyoko/launchd/publisher-out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/travis/src/gyoko/launchd/publisher-err.log</string>
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key>
+            <integer>11</integer>
+            <key>Minute</key>
+            <integer>07</integer>
+            <key>Weekday</key>
+            <integer>1</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>11</integer>
+            <key>Minute</key>
+            <integer>07</integer>
+            <key>Weekday</key>
+            <integer>3</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>11</integer>
+            <key>Minute</key>
+            <integer>07</integer>
+            <key>Weekday</key>
+            <integer>5</integer>
+        </dict>
+    </array>
+</dict>
+</plist>

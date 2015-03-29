@@ -1,0 +1,104 @@
+#!/usr/local/bin/python3.4
+
+from datetime import datetime
+import os
+import shutil
+import subprocess
+import sys
+
+import requests
+
+CURRENT_CHAPTER_NUM = '6'
+CURRENT_CHAPTER = '%s - My True Self' % CURRENT_CHAPTER_NUM
+DROPBOX_FOLDER = r'/Users/travis/Dropbox/Gyoko Shoujo!'
+DROPBOX_PREFIX = 'MTS'
+
+src_dir = os.path.realpath(
+    os.path.join(os.path.dirname(__file__), '..'))
+page_dir = os.path.join(src_dir, 'content', CURRENT_CHAPTER)
+
+def text_message(msg):
+    text_url = 'http://www.onlinetextmessage.com/send.php'
+    body = {
+        'code' : '',
+        'number' : '8017557362',
+        'from' : 'me@example.com',
+        'remember' : 'n',
+        'subject' : 'GS Message',
+        'carrier' : '41',
+        'quicktext' : '',
+        'message' : msg,
+        's' : 'Send Message'
+    }
+    res = requests.post(text_url, data=body)
+    if res.status_code != 200:
+        print('Unable to send message:\n%s\nResponse: %s' %
+              (msg, res.status_code), file=sys.stderr)
+        sys.exit(-1)
+
+def send_error(msg):
+    print('%s - Error publishing page:\n%s' %
+          (datetime.isoformat(datetime.now()), msg),
+          file=sys.stderr)
+    text_message('Error publishing Gyoko Shojo!')
+    sys.exit(-1)
+
+
+def find_last_page():
+    '''Finds the last published page number in this chapter. New chapters
+    must still be manually published, so this will raise an error if there
+    isn't at least one page.'''
+    cur_page = 0
+    for fname in os.listdir(page_dir):
+        base, _ = os.path.splitext(fname)
+        try:
+            this_page = int(base)
+            if this_page > cur_page:
+                cur_page = this_page
+        except ValueError:
+            pass
+    if not cur_page:
+        send_error('Unable to find the last published page.')
+    else:
+        return cur_page
+
+def make_page_path(page_num):
+    '''Returns the fully qualified path (including suffix) for the page
+    with the given number.'''
+    return os.path.join(page_dir, '%i.png' % page_num)
+
+def run_cmd(args, expected_return=0, check_return=True):
+    ret_val = subprocess.call(args, cwd=src_dir, timeout=120)
+    if check_return and ret_val != expected_return:
+        send_error('Sub-command failed:\n '
+                   'Command: %s  '
+                   'Return:  %i' % (' '.join(args), ret_val))
+
+def copy_page(page_num):
+    src_name = '%s-%i.png' % (DROPBOX_PREFIX, page_num)
+    src = os.path.join(DROPBOX_FOLDER, src_name)
+    dest = make_page_path(page_num)
+    if not os.path.exists(src):
+        send_error('Unable to find source file: %s' % src)
+    shutil.copyfile(src, dest)
+
+def git_add_page(page_num):
+    run_cmd(['git', 'add', make_page_path(page_num)])
+
+def git_commit_page(page_num):
+    run_cmd(['git', 'commit', '-m',
+             '"chapter %s page %i"' % (CURRENT_CHAPTER_NUM, page_num)])
+
+def build_site():
+    run_cmd(['./build-site'])
+
+
+try:
+    page_num = find_last_page() + 1
+    copy_page(page_num)
+    git_add_page(page_num)
+    git_commit_page(page_num)
+    build_site()
+except:
+    import traceback
+    send_error(traceback.format_exc(limit=2))
