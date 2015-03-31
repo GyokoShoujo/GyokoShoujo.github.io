@@ -7,7 +7,7 @@
     <string>com.gyokoshojo.publisher</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/home/travis/src/gyoko/launchd/publisher</string>
+        <string>/Users/travis/src/gyoko/launchd/publisher</string>
     </array>
     <key>StandardOutPath</key>
     <string>/Users/travis/src/gyoko/launchd/publisher-out.log</string>
