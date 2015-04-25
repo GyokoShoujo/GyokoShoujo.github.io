@@ -8,10 +8,10 @@ import sys
 
 import requests
 
-CURRENT_CHAPTER_NUM = '6'
-CURRENT_CHAPTER = '%s - My True Self' % CURRENT_CHAPTER_NUM
+CURRENT_CHAPTER_NUM = '7'
+CURRENT_CHAPTER = '%s - Will To Live' % CURRENT_CHAPTER_NUM
 DROPBOX_FOLDER = r'/Users/travis/Dropbox/Gyoko Shoujo!'
-DROPBOX_PREFIX = 'MTS'
+DROPBOX_PREFIX = 'WtL'
 
 src_dir = os.path.realpath(
     os.path.join(os.path.dirname(__file__), '..'))
@@ -57,10 +57,7 @@ def find_last_page():
                 cur_page = this_page
         except ValueError:
             pass
-    if not cur_page:
-        send_error('Unable to find the last published page.')
-    else:
-        return cur_page
+    return cur_page
 
 def make_page_path(page_num):
     '''Returns the fully qualified path (including suffix) for the page
