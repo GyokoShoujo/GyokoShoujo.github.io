@@ -66,7 +66,7 @@ def make_page_path(page_num):
 
 def run_cmd(args, expected_return=0, check_return=True):
     try:
-        timeout=300
+        timeout=540
         ret_val = subprocess.call(args, cwd=src_dir, timeout=timeout)
         if check_return and ret_val != expected_return:
             send_error('%s exited with %s' % (args[0], str(ret_val)),
