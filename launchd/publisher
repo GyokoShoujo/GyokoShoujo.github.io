@@ -24,7 +24,7 @@ def text_message(msg):
         'number' : '8017557362',
         'from' : 'me@example.com',
         'remember' : 'n',
-        'subject' : 'GS Message',
+        'subject' : 'GS Publishing Error',
         'carrier' : '41',
         'quicktext' : '',
         'message' : msg,
@@ -36,11 +36,11 @@ def text_message(msg):
               (msg, res.status_code), file=sys.stderr)
         sys.exit(-1)
 
-def send_error(msg):
-    print('%s - Error publishing page:\n%s' %
-          (datetime.isoformat(datetime.now()), msg),
+def send_error(short_msg, full_msg):
+    print('%s (%i) - Error publishing page:\n%s' %
+          (datetime.isoformat(datetime.now()), os.getpid(), full_msg),
           file=sys.stderr)
-    text_message('Error publishing Gyoko Shojo!')
+    text_message(short_msg)
     sys.exit(-1)
 
 
@@ -65,18 +65,24 @@ def make_page_path(page_num):
     return os.path.join(page_dir, '%i.png' % page_num)
 
 def run_cmd(args, expected_return=0, check_return=True):
-    ret_val = subprocess.call(args, cwd=src_dir, timeout=120)
-    if check_return and ret_val != expected_return:
-        send_error('Sub-command failed:\n '
-                   'Command: %s  '
-                   'Return:  %i' % (' '.join(args), ret_val))
+    try:
+        timeout=300
+        ret_val = subprocess.call(args, cwd=src_dir, timeout=timeout)
+        if check_return and ret_val != expected_return:
+            send_error('%s exited with %s' % (args[0], str(ret_val)),
+                       'Sub-command failed with %s:\n Command: "%s"' %
+                       (ret_val, ' '.join(args)))
+    except subprocess.TimeoutExpired:
+        send_error('%s timed out!' % (args[0]),
+                   'Sub-command timed out after %i seconds:\n Command: "%s"' %
+                   (timeout, ' '.join(args)))
 
 def copy_page(page_num):
     src_name = '%s-%i.png' % (DROPBOX_PREFIX, page_num)
     src = os.path.join(DROPBOX_FOLDER, src_name)
     dest = make_page_path(page_num)
     if not os.path.exists(src):
-        send_error('Unable to find source file: %s' % src)
+        send_error('Unable to find source file: %s' % src, None)
     shutil.copyfile(src, dest)
 
 def git_add_page(page_num):
@@ -87,15 +93,17 @@ def git_commit_page(page_num):
              '"chapter %s page %i"' % (CURRENT_CHAPTER_NUM, page_num)])
 
 def build_site():
-    run_cmd(['./build-site'])
+    run_cmd(['./build-site', '-d'])
 
 
-try:
-    page_num = find_last_page() + 1
-    copy_page(page_num)
-    git_add_page(page_num)
-    git_commit_page(page_num)
-    build_site()
-except:
-    import traceback
-    send_error(traceback.format_exc(limit=2))
+if __name__ == '__main__':
+    try:
+        page_num = find_last_page() + 1
+        copy_page(page_num)
+        git_add_page(page_num)
+        git_commit_page(page_num)
+        build_site()
+    except Exception as e:
+        import traceback
+        send_error('Generic exception: %s' % e.message,
+                   traceback.format_exc())
