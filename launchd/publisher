@@ -1,8 +1,10 @@
 #!/usr/local/bin/python3.4
 
 from datetime import datetime
+import functools
 import os
 import shutil
+import signal
 import subprocess
 import sys
 
@@ -36,7 +38,9 @@ def text_message(msg):
               (msg, res.status_code), file=sys.stderr)
         sys.exit(-1)
 
-def send_error(short_msg, full_msg):
+def send_error(short_msg, full_msg=None):
+    if not full_msg:
+        full_msg = short_msg
     print('%s (%i) - Error publishing page:\n%s' %
           (datetime.isoformat(datetime.now()), os.getpid(), full_msg),
           file=sys.stderr)
@@ -66,8 +70,20 @@ def make_page_path(page_num):
 
 def run_cmd(args, expected_return=0, check_return=True):
     try:
-        timeout=540
-        ret_val = subprocess.call(args, cwd=src_dir, timeout=timeout)
+        # os.chdir(src_dir)
+        # cmd = ' '.join((s if ' ' not in s else '"%s"' % s for s in args))
+        # ret_val = 0
+        # ret_val = os.system(cmd)
+        # ret_val = subprocess.call(args, cwd=src_dir, timeout=timeout)
+        proc = subprocess.Popen(
+            args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            cwd=src_dir, bufsize=1, universal_newlines=True)
+        while True:
+            l = proc.stdout.readline()
+            if not l:
+                break
+            print(l, end='', flush=True)
+        ret_val = proc.poll()
         if check_return and ret_val != expected_return:
             send_error('%s exited with %s' % (args[0], str(ret_val)),
                        'Sub-command failed with %s:\n Command: "%s"' %
@@ -82,7 +98,7 @@ def copy_page(page_num):
     src = os.path.join(DROPBOX_FOLDER, src_name)
     dest = make_page_path(page_num)
     if not os.path.exists(src):
-        send_error('Unable to find source file: %s' % src, None)
+        send_error('Unable to find source file: %s' % src)
     shutil.copyfile(src, dest)
 
 def git_add_page(page_num):
@@ -90,14 +106,26 @@ def git_add_page(page_num):
 
 def git_commit_page(page_num):
     run_cmd(['git', 'commit', '-m',
-             '"chapter %s page %i"' % (CURRENT_CHAPTER_NUM, page_num)])
+             'chapter %s page %i' % (CURRENT_CHAPTER_NUM, page_num)])
 
 def build_site():
     run_cmd(['./build-site', '-d'])
 
+def signal_handler(signal_num, exit, *args):
+    print('Signal raised: ' + str(signal_num), file=sys.stderr)
+    if exit:
+        raise SystemExit(signal_num + 128)
+
+def setup_signals():
+    for sig in (signal.SIGHUP, signal.SIGINT, signal.SIGQUIT,
+                signal.SIGALRM, signal.SIGTERM):
+        signal.signal(sig, functools.partial(signal_handler, sig, True))
+    for sig in (signal.SIGCHLD,):
+        signal.signal(sig, functools.partial(signal_handler, sig, False))
 
 if __name__ == '__main__':
     try:
+        setup_signals()
         page_num = find_last_page() + 1
         copy_page(page_num)
         git_add_page(page_num)
@@ -105,5 +133,4 @@ if __name__ == '__main__':
         build_site()
     except Exception as e:
         import traceback
-        send_error('Generic exception: %s' % e.message,
-                   traceback.format_exc())
+        send_error('Generic exception: %s' % str(e), traceback.format_exc())
